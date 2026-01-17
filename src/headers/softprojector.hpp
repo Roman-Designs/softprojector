@@ -49,6 +49,8 @@
 #include <QToolBar>
 
 class QActionGroup;
+class QShortcut;
+class QTranslator;
 
 namespace Ui
 {
@@ -237,6 +239,31 @@ private slots:
 protected:
     void closeEvent(QCloseEvent *event);
     void keyPressEvent(QKeyEvent *event);
+
+private:
+    Ui::SoftProjectorClass *ui;
+    SettingsDialog *settingsDialog;
+    HelpDialog *helpDialog;
+    QString languagePath;
+    QActionGroup *languageGroup;
+    QDir appDataDir;
+    QTranslator translator;
+    QString cur_locale;
+    QShortcut *shpgUP;
+    QShortcut *shpgDwn;
+    QShortcut *shSart1;
+    QShortcut *shSart2;
+    bool hasDisplayScreen2;
+    bool hasDisplayScreen3;
+    bool hasDisplayScreen4;
+    bool isSingleScreen;
+    bool is_schedule_saved;
+    QString schedule_file_path;
+    PresentationType pType;
+    bool new_list;
+    QList<SlideShowItem> pictureShowList;
+    VideoInfo currentVideo;
+    QList<Schedule> schedule;
 };
 
 #endif // SOFTPROJECTOR_HPP

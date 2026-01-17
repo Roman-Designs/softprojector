@@ -775,7 +775,7 @@ VirtualOutputSettings::VirtualOutputSettings()
     useCustomTheme = false;
     streamThemeId = 0;
     mirrorDisplay1 = true;
-    lowerThirdFont.fromString("Arial,24,-1,5,50,0,0,0,0,0");
+    lowerThirdFont = "Arial,24,-1,5,50,0,0,0,0,0";
     lowerThirdBgColor = QColor(0, 0, 0, 180);
     lowerThirdTextColor = QColor(Qt::white);
 }
@@ -897,7 +897,7 @@ void VirtualOutputSettings::save(QSqlQuery &sq)
         set += "\nmirrorDisplay1 = true";
     else
         set += "\nmirrorDisplay1 = false";
-    set += "\nlowerThirdFont = " + lowerThirdFont.toString();
+    set += "\nlowerThirdFont = " + lowerThirdFont;
     set += "\nlowerThirdBgColor = " + QString::number(lowerThirdBgColor.rgba());
     set += "\nlowerThirdTextColor = " + QString::number(lowerThirdTextColor.rgba());
 
@@ -944,7 +944,7 @@ void VirtualOutputSettings::load(QSqlQuery &sq)
             else if(n == "mirrorDisplay1")
                 mirrorDisplay1 = (v == "true");
             else if(n == "lowerThirdFont")
-                lowerThirdFont.fromString(v);
+                lowerThirdFont = v;
             else if(n == "lowerThirdBgColor")
                 lowerThirdBgColor = QColor(v.toUInt());
             else if(n == "lowerThirdTextColor")
@@ -983,7 +983,7 @@ void VirtualOutputSettings::update(QSqlQuery &sq)
         set += "\nmirrorDisplay1 = true";
     else
         set += "\nmirrorDisplay1 = false";
-    set += "\nlowerThirdFont = " + lowerThirdFont.toString();
+    set += "\nlowerThirdFont = " + lowerThirdFont;
     set += "\nlowerThirdBgColor = " + QString::number(lowerThirdBgColor.rgba());
     set += "\nlowerThirdTextColor = " + QString::number(lowerThirdTextColor.rgba());
     sq.addBindValue(set);
@@ -1299,7 +1299,7 @@ void Settings::loadSettings()
         }
         else if(t.startsWith("screenFormat"))
         {
-            int screenIndex = t.midRef(12).toInt();
+            int screenIndex = t.mid(12).toInt();
             if(screenIndex >= 1 && screenIndex <= 4)
             {
                 loadScreenFormatSettings(screenIndex, general.screenFormat[screenIndex - 1]);

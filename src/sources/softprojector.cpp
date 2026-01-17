@@ -1015,12 +1015,6 @@ void SoftProjector::updateScreen()
                 pds2->renderPassiveText(theme.passive.backgroundPix,theme.passive.useBackground, theme.passive);
             }
         }
-            else
-            {
-                pds2->renderPassiveText(theme.passive.backgroundPix,theme.passive.useBackground, theme.passive);
-            }
-
-        }
 
         if(hasDisplayScreen3)
         {
@@ -1032,7 +1026,6 @@ void SoftProjector::updateScreen()
             {
                 pds3->renderPassiveText(theme.passive.backgroundPix,theme.passive.useBackground, theme.passive);
             }
-
         }
 
         if(hasDisplayScreen4)
@@ -1047,41 +1040,13 @@ void SoftProjector::updateScreen()
             }
         }
 
-        }
-
-        if(hasDisplayScreen3)
-        {
-            if(!theme.passive3.useDisp1settings)
-            {
-                pds3->renderPassiveText(theme.passive3.backgroundPix,theme.passive3.useBackground);
-            }
-            else
-            {
-                pds3->renderPassiveText(theme.passive.backgroundPix,theme.passive.useBackground);
-            }
-
-        }
-
-        if(hasDisplayScreen4)
-        {
-            if(!theme.passive4.useDisp1settings)
-            {
-                pds4->renderPassiveText(theme.passive4.backgroundPix,theme.passive4.useBackground);
-            }
-            else
-            {
-                pds4->renderPassiveText(theme.passive.backgroundPix,theme.passive.useBackground);
-            }
-
-        }
-
         // Update virtual output if enabled
         if(virtualOutput && virtualOutput->isEnabled())
         {
             virtualOutput->renderPassiveText(theme.passive.backgroundPix,theme.passive.useBackground, theme.passive);
         }
 
-           stopVideo();
+        stopVideo();
         ui->actionShow->setEnabled(true);
         ui->actionHide->setEnabled(false);
         ui->actionClear->setEnabled(false);

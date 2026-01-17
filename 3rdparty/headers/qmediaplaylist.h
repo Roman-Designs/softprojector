@@ -5,8 +5,9 @@
 #define QMEDIAPLAYLIST_H
 
 #include <QObject>
-
-#include <qmediaenumdebug.h>
+#include <QUrl>
+#include <QList>
+#include <QIODevice>
 
 QT_BEGIN_NAMESPACE
 
@@ -88,8 +89,5 @@ private:
 };
 
 QT_END_NAMESPACE
-
-Q_MEDIA_ENUM_DEBUG(QMediaPlaylist, PlaybackMode)
-Q_MEDIA_ENUM_DEBUG(QMediaPlaylist, Error)
 
 #endif // QMEDIAPLAYLIST_H

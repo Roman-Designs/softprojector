@@ -24,6 +24,9 @@
 #include <QtSql>
 #include "settings.hpp"
 
+// Migration function for video backgrounds
+void migrateThemeTablesForVideoBackgrounds();
+
 enum BackgroundFillMode
 {
     FILL_MODE_STRETCH,

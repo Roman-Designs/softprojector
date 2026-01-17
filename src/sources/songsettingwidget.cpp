@@ -777,14 +777,14 @@ void SongSettingWidget::on_groupBoxSongAddBKToText_toggled(bool arg1)
         mySettings.backgroundName = c.name();
         mySettings.backgroundPix = px;
         ui->lineEditSongBackground->setText(c.name());
-        ui->groupBoxSongBackground->setChecked(arg1);
+        ui->groupBoxImageBackground->setChecked(arg1);
     }
     else
     {
         mySettings.useBackground = arg1;
         mySettings.backgroundName = "";
         mySettings.backgroundPix = QPixmap(1,1);
-        ui->groupBoxSongBackground->setChecked(arg1);
+        ui->groupBoxImageBackground->setChecked(arg1);
         ui->lineEditSongBackground->clear();
     }
 }
@@ -801,14 +801,14 @@ void SongSettingWidget::on_groupBoxSongAddBKToText2_toggled(bool arg1)
         mySettings2.backgroundName = c.name();
         mySettings2.backgroundPix = px;
         ui->lineEditSongBackground2->setText(c.name());
-        ui->groupBoxSongBackground2->setChecked(arg1);
+        ui->groupBoxImageBackground2->setChecked(arg1);
     }
     else
     {
         mySettings2.useBackground = arg1;
         mySettings2.backgroundName = "";
         mySettings2.backgroundPix = QPixmap(1,1);
-        ui->groupBoxSongBackground2->setChecked(arg1);
+        ui->groupBoxImageBackground2->setChecked(arg1);
         ui->lineEditSongBackground2->clear();
     }
 }

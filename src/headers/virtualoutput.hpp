@@ -34,6 +34,7 @@
 #include "bible.hpp"
 #include "song.hpp"
 #include "announcement.hpp"
+#include "videoinfo.hpp"
 
 /**
  * @brief The VirtualOutput class manages a separate streaming/output window

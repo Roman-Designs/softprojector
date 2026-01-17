@@ -114,7 +114,7 @@ QSize ProjectorDisplayScreen::getFormatResolution() const
     }
 }
 
-void ProjectorDisplayScreen::calculateEffectiveRenderSize()
+QSize ProjectorDisplayScreen::calculateEffectiveRenderSize()
 {
     QSize formatRes = getFormatResolution();
     QSize windowSize = this->size();
@@ -122,13 +122,13 @@ void ProjectorDisplayScreen::calculateEffectiveRenderSize()
     if(m_formatSettings.aspectRatio == FORMAT_AUTO)
     {
         m_effectiveRenderSize = windowSize;
-        return;
+        return m_effectiveRenderSize;
     }
 
     if(!m_formatSettings.maintainAspect)
     {
         m_effectiveRenderSize = windowSize;
-        return;
+        return m_effectiveRenderSize;
     }
 
     double formatAspect = static_cast<double>(formatRes.width()) / static_cast<double>(formatRes.height());
@@ -137,7 +137,7 @@ void ProjectorDisplayScreen::calculateEffectiveRenderSize()
     if(qAbs(formatAspect - windowAspect) < 0.01)
     {
         m_effectiveRenderSize = windowSize;
-        return;
+        return m_effectiveRenderSize;
     }
 
     if(m_formatSettings.cropToFit)
@@ -166,6 +166,7 @@ void ProjectorDisplayScreen::calculateEffectiveRenderSize()
             m_effectiveRenderSize = QSize(windowSize.width(), newHeight);
         }
     }
+    return m_effectiveRenderSize;
 }
 
 void ProjectorDisplayScreen::setBackPixmap(QPixmap p, int fillMode)

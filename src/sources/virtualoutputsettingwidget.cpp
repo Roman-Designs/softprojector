@@ -47,6 +47,18 @@ VirtualOutputSettingWidget::~VirtualOutputSettingWidget()
     delete ui;
 }
 
+void VirtualOutputSettingWidget::setSettings(VirtualOutputSettings &settings)
+{
+    m_settings = settings;
+    loadSettings();
+}
+
+void VirtualOutputSettingWidget::getSettings(VirtualOutputSettings &settings)
+{
+    saveSettings();
+    settings = m_settings;
+}
+
 void VirtualOutputSettingWidget::loadSettings()
 {
     ui->checkBoxEnable->setChecked(m_settings.enabled);

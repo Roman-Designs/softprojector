@@ -118,7 +118,7 @@ private:
     ScreenFormatSettings m_formatSettings;
     QSize m_effectiveRenderSize;
 
-    void calculateEffectiveRenderSize();
+    QSize calculateEffectiveRenderSize();
     QSize getFormatResolution() const;
 
     QPixmap back;

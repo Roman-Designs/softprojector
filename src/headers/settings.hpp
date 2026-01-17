@@ -24,6 +24,9 @@
 #include <QPixmap>
 #include "spfunctions.hpp"
 
+// Forward declaration
+class ScreenFormatSettings;
+
 void saveIndividualSettings(QSqlQuery &sq, QString sId, int tId, QString name, const QVariant &value);
 void updateIndividualSettings(QSqlQuery &sq, QString sId, int tId, QString name, const QVariant &value);
 void saveScreenFormatSettings(int screenIndex, const ScreenFormatSettings &settings);
@@ -323,6 +326,7 @@ public:
     bool useCustomTheme;
     int streamThemeId;
     bool mirrorDisplay1;
+    bool displayIsOnTop;
     QString lowerThirdFont;
     QColor lowerThirdBgColor;
     QColor lowerThirdTextColor;

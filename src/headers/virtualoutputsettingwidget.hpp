@@ -64,6 +64,7 @@ private slots:
 private:
     void loadSettings();
     void saveSettings();
+    void loadThemes();
     QString getFontText(QFont font);
     void updateColorPreview(QGraphicsView *graphicsView, const QColor &color);
     void updateFontPreview();

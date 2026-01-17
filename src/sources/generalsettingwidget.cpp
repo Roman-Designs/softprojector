@@ -410,42 +410,6 @@ void GeneralSettingWidget::loadScreenFormatSettings()
 
 void GeneralSettingWidget::updateFormatPreview(int screenIndex)
 {
-    QComboBox *comboBox;
-    QSpinBox *widthSpinBox;
-    QSpinBox *heightSpinBox;
-
-    switch(screenIndex) {
-    case 1:
-        comboBox = ui->comboBoxFormat1;
-        widthSpinBox = ui->spinBoxCustomWidth1;
-        heightSpinBox = ui->spinBoxCustomHeight1;
-        break;
-    case 2:
-        comboBox = ui->comboBoxFormat2;
-        widthSpinBox = ui->spinBoxCustomWidth2;
-        heightSpinBox = ui->spinBoxCustomHeight2;
-        break;
-    case 3:
-        comboBox = ui->comboBoxFormat3;
-        widthSpinBox = ui->spinBoxCustomWidth3;
-        heightSpinBox = ui->spinBoxCustomHeight3;
-        break;
-    case 4:
-        comboBox = ui->comboBoxFormat4;
-        widthSpinBox = ui->spinBoxCustomWidth4;
-        heightSpinBox = ui->spinBoxCustomHeight4;
-        break;
-    default:
-        return;
-    }
-
-    bool isCustom = (comboBox->currentIndex() == FORMAT_CUSTOM);
-    widthSpinBox->setEnabled(isCustom);
-    heightSpinBox->setEnabled(isCustom);
-}
-
-void GeneralSettingWidget::updateFormatPreview(int screenIndex)
-{
     QSpinBox *widthSpinBox;
     QSpinBox *heightSpinBox;
     QCheckBox *maintainAspectCheck;
@@ -834,4 +798,41 @@ void GeneralSettingWidget::on_comboBoxFormat4_activated(int index)
     applyFormatPreset(4, index);
     updateCustomResolutionState(4);
     updateFormatPreview(4);
+}
+
+void GeneralSettingWidget::updateCustomResolutionState(int screenIndex)
+{
+    QComboBox *formatCombo = nullptr;
+    QSpinBox *widthSpinBox = nullptr;
+    QSpinBox *heightSpinBox = nullptr;
+
+    switch(screenIndex) {
+    case 1:
+        formatCombo = ui->comboBoxFormat1;
+        widthSpinBox = ui->spinBoxCustomWidth1;
+        heightSpinBox = ui->spinBoxCustomHeight1;
+        break;
+    case 2:
+        formatCombo = ui->comboBoxFormat2;
+        widthSpinBox = ui->spinBoxCustomWidth2;
+        heightSpinBox = ui->spinBoxCustomHeight2;
+        break;
+    case 3:
+        formatCombo = ui->comboBoxFormat3;
+        widthSpinBox = ui->spinBoxCustomWidth3;
+        heightSpinBox = ui->spinBoxCustomHeight3;
+        break;
+    case 4:
+        formatCombo = ui->comboBoxFormat4;
+        widthSpinBox = ui->spinBoxCustomWidth4;
+        heightSpinBox = ui->spinBoxCustomHeight4;
+        break;
+    default:
+        return;
+    }
+
+    // Custom resolution is at index FORMAT_CUSTOM (last item)
+    bool isCustom = (formatCombo->currentIndex() == FORMAT_CUSTOM);
+    widthSpinBox->setEnabled(isCustom);
+    heightSpinBox->setEnabled(isCustom);
 }

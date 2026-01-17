@@ -21,7 +21,7 @@
 #include "ui_passivesettingwidget.h"
 #include <QColorDialog>
 #include <QFile>
-#include "spfunctions.hpp"
+#include "../headers/spfunctions.hpp"
 
 PassiveSettingWidget::PassiveSettingWidget(QWidget *parent) :
     QWidget(parent),

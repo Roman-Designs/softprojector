@@ -350,7 +350,7 @@ void VirtualOutput::renderBibleText(Verse verse, BibleSettings &settings)
 
     // TODO: Phase 1.2+ - Render Bible verse text with settings
     // This will be implemented after VirtualDisplayArea.qml is created
-    qDebug() << "VirtualOutput rendering Bible text:" << verse.bible << verse.book << verse.chapter;
+    qDebug() << "VirtualOutput rendering Bible text:" << verse.primary_caption;
 }
 
 void VirtualOutput::renderSongText(Stanza stanza, SongSettings &settings)
@@ -398,7 +398,7 @@ void VirtualOutput::renderVideo(VideoInfo videoDetails)
 
     // TODO: Phase 1.2+ - Set video playback
     // This will be implemented after VirtualDisplayArea.qml is created
-    qDebug() << "VirtualOutput rendering video:" << videoDetails.videoPath;
+    qDebug() << "VirtualOutput rendering video:" << videoDetails.fileName;
 }
 
 void VirtualOutput::playVideo()

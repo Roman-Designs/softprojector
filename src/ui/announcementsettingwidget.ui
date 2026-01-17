@@ -335,11 +335,12 @@
       </item>
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_8">
-        <item>
-         <widget class="QLabel" name="labelAlignment">
-          <property name="text">
-           <string>Alignment:</string>
-          </property>
+         <item>
+          <widget class="QLabel" name="labelAlignment">
+           <property name="text">
+            <string>Alignment:</string>
+           </property>
+          </widget>
          </item>
         <item>
          <widget class="QComboBox" name="comboBoxVerticalAling">
@@ -2464,5 +2465,6 @@
  </widget>
  <resources>
   <include location="softprojector.qrc"/>
- </connections>
+ </resources>
+ <connections/>
 </ui>

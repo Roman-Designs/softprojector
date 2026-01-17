@@ -33,6 +33,7 @@ public:
     explicit FormatPreviewLabel(QWidget *parent = nullptr);
     void setFormat(int width, int height, bool maintainAspect, bool cropToFit);
     void updatePreview(int screenIndex);
+    QString getAspectRatioString(int width, int height);
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -45,7 +46,6 @@ private:
     int m_screenIndex;
 
     void drawPreview(QPainter &painter, const QRect &rect);
-    QString getAspectRatioString(int width, int height);
 };
 
 namespace Ui {
@@ -101,6 +101,10 @@ private slots:
     void on_comboBoxFormat4_activated(int index);
     void updateCustomResolutionState(int screenIndex);
     void updateFormatPreview(int screenIndex);
+    void populateFormatComboBoxes();
+    void createPreviewWidgets();
+    void loadScreenFormatSettings();
+    void applyFormatPreset(int screenIndex, int formatIndex);
 protected:
     virtual void changeEvent(QEvent *e);
 };
