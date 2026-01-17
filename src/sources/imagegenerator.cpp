@@ -253,22 +253,45 @@ void ImageGenerator::drawBibleText(QPainter *painter, bool isShadow)
     top = maxtop;
 
     // Repurpose maxh for maxh for max height for one translation including text and caption
+    // FIX #1 & #2: Eliminate integer division loss and track section boundaries explicitly
+    int section1_height, section2_height, section3_height;
+    int top2, top3;
+    
     if(havePrimary && haveSecondary && haveTrinary)
     {
-        maxh = h/3;
+        // Three verses: distribute height equally, with remainder going to the last section
+        maxh = h / 3;
+        int remainder = h % 3;
+        section1_height = maxh;
+        section2_height = maxh;
+        section3_height = maxh + remainder;  // Last section absorbs remainder pixels
+        
+        top2 = top + section1_height;
+        top3 = top + section1_height + section2_height;
     }
     else if(havePrimary && haveSecondary)
     {
-        maxh = h/2;
+        // Two verses: distribute height equally, with remainder going to the last section
+        maxh = h / 2;
+        int remainder = h % 2;
+        section1_height = maxh;
+        section2_height = maxh + remainder;  // Last section absorbs remainder pixels
+        section3_height = 0;  // Not used
+        
+        top2 = top + section1_height;
+        top3 = top + h;  // Not used in 2-verse mode
     }
     else
     {
-       maxh = h;
+        // Single verse: uses all available height
+        maxh = h;
+        section1_height = h;
+        section2_height = 0;
+        section3_height = 0;
+        
+        top2 = top + h;
+        top3 = top + h;
     }
-
-    // Adjust tops for 2nd and 3rd translations
-    int top2 = top + maxh;
-    int top3 = top + maxh + maxh;
 
     // Rects for storing the position of the text and caption drawing:
     QRect trect1, crect1, trect2, crect2, trect3, crect3;
@@ -353,6 +376,14 @@ void ImageGenerator::drawBibleText(QPainter *painter, bool isShadow)
             {
                 int current_size = m_bSets.textFont.pointSize();
                 int curCap_size = m_bSets.captionFont.pointSize();
+                
+                // FIX #5: Add minimum font size check to prevent infinite loops
+                const int MIN_FONT_SIZE = 6;
+                if (current_size <= MIN_FONT_SIZE)
+                {
+                    break;  // Prevent font from becoming too small
+                }
+                
                 current_size--;
                 m_bSets.textFont.setPointSize(current_size);
                 if (curCap_size > current_size)
@@ -363,18 +394,36 @@ void ImageGenerator::drawBibleText(QPainter *painter, bool isShadow)
             }
        }
 
-        m_isTextPrepared = true;
-        m_bdSets.ptRect = trect1;
-        m_bdSets.pcRect = crect1;
-        m_bdSets.stRect = trect2;
-        m_bdSets.scRect = crect2;
-        m_bdSets.ttRect = trect3;
-        m_bdSets.tcRect = crect3;
-        m_bdSets.tFont = m_bSets.textFont;
-        m_bdSets.cFont = m_bSets.captionFont;
+        // FIX #3: Add bounds checking to verify verses fit within allocated sections
+        if(havePrimary && (trect1.height() + crect1.height()) > section1_height)
+        {
+            qWarning("Bible drawing: Primary verse (text + caption = %d) exceeds section height (%d)",
+                     trect1.height() + crect1.height(), section1_height);
+        }
+        if(haveSecondary && (trect2.height() + crect2.height()) > section2_height)
+        {
+            qWarning("Bible drawing: Secondary verse (text + caption = %d) exceeds section height (%d)",
+                     trect2.height() + crect2.height(), section2_height);
+        }
+        if(haveTrinary && (trect3.height() + crect3.height()) > section3_height)
+        {
+            qWarning("Bible drawing: Tertiary verse (text + caption = %d) exceeds section height (%d)",
+                     trect3.height() + crect3.height(), section3_height);
+        }
+
+         m_isTextPrepared = true;
+         m_bdSets.ptRect = trect1;
+         m_bdSets.pcRect = crect1;
+         m_bdSets.stRect = trect2;
+         m_bdSets.scRect = crect2;
+         m_bdSets.ttRect = trect3;
+         m_bdSets.tcRect = crect3;
+         m_bdSets.tFont = m_bSets.textFont;
+         m_bdSets.cFont = m_bSets.captionFont;
     }
 
     // Draw the bible text verse(s) at the final size:
+    // FIX #4: Add safety clipping to prevent verses from exceeding their allocated sections
     painter->setFont(m_bdSets.tFont);
     if(isShadow)
     {
@@ -385,16 +434,25 @@ void ImageGenerator::drawBibleText(QPainter *painter, bool isShadow)
         painter->setPen(m_bSets.textColor);
     }
 
-    painter->drawText(left,m_bdSets.ptRect.top(),w,m_bdSets.ptRect.height(), tflags, m_verse.primary_text);
+    // Primary verse: clamp height to section1_height
+    int primary_text_height = qMin(m_bdSets.ptRect.height(), section1_height - m_bdSets.pcRect.height());
+    primary_text_height = qMax(primary_text_height, 0);
+    painter->drawText(left, m_bdSets.ptRect.top(), w, primary_text_height, tflags, m_verse.primary_text);
 
     if(haveSecondary && !m_verse.secondary_text.isEmpty())
     {
-        painter->drawText(left,m_bdSets.stRect.top(),w,m_bdSets.stRect.height(), tflags, m_verse.secondary_text);
+        // Secondary verse: clamp height to section2_height
+        int secondary_text_height = qMin(m_bdSets.stRect.height(), section2_height - m_bdSets.scRect.height());
+        secondary_text_height = qMax(secondary_text_height, 0);
+        painter->drawText(left, m_bdSets.stRect.top(), w, secondary_text_height, tflags, m_verse.secondary_text);
     }
 
     if(haveTrinary && !m_verse.trinary_text.isEmpty())
     {
-        painter->drawText(left,m_bdSets.ttRect.top(),w,m_bdSets.ttRect.height(), tflags, m_verse.trinary_text);
+        // Tertiary verse: clamp height to section3_height
+        int tertiary_text_height = qMin(m_bdSets.ttRect.height(), section3_height - m_bdSets.tcRect.height());
+        tertiary_text_height = qMax(tertiary_text_height, 0);
+        painter->drawText(left, m_bdSets.ttRect.top(), w, tertiary_text_height, tflags, m_verse.trinary_text);
     }
 
     painter->setFont(m_bdSets.cFont);

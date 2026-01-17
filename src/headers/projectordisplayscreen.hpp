@@ -49,14 +49,21 @@ public:
 
 public slots:
     void resetImGenSize();
+    void setFormatSettings(const ScreenFormatSettings &settings);
+    void applyFormat();
 
     void renderNotText();
-    void renderPassiveText(QPixmap &back,bool useBack);
+    void renderPassiveText(QPixmap &back,bool useBack, TextSettings &pSets);
     void renderBibleText(Verse bVerse, BibleSettings &bSets);
     void renderSongText(Stanza stanza, SongSettings &sSets);
     void renderAnnounceText(AnnounceSlide announce, TextSettings &aSets);
     void renderSlideShow(QPixmap slide,SlideShowSettings &ssSets);
     void renderVideo(VideoInfo videoDetails);
+
+    void setBackgroundVideo(const QString &path, bool loop, int fillMode);
+    void stopBackgroundVideo();
+    void pauseBackgroundVideo();
+    void resumeBackgroundVideo();
 
     void playVideo();
     void pauseVideo();
@@ -107,7 +114,12 @@ private:
     bool isNewBack, back1to2, text1to2;
     int tranType,backType;
     QColor m_color;
-   // DisplayControlsSettings mySettings;
+    QString m_currentBackgroundVideoPath;
+    ScreenFormatSettings m_formatSettings;
+    QSize m_effectiveRenderSize;
+
+    void calculateEffectiveRenderSize();
+    QSize getFormatResolution() const;
 
     QPixmap back;
 };

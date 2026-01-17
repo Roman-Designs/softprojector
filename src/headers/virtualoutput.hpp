@@ -92,12 +92,18 @@ public:
 
 public slots:
     // Render content from main display
-    void renderPassiveText(QPixmap &background, bool useBackground);
+    void renderPassiveText(QPixmap &background, bool useBackground, TextSettings &pSets);
     void renderBibleText(Verse verse, BibleSettings &settings);
     void renderSongText(Stanza stanza, SongSettings &settings);
     void renderAnnounceText(AnnounceSlide announce, TextSettings &settings);
     void renderSlideShow(QPixmap slide, SlideShowSettings &settings);
     void renderVideo(VideoInfo videoDetails);
+
+    // Video background control
+    void setBackgroundVideo(const QString &path, bool loop, int fillMode);
+    void stopBackgroundVideo();
+    void pauseBackgroundVideo();
+    void resumeBackgroundVideo();
 
     // Video playback control
     void playVideo();
@@ -184,6 +190,8 @@ private:
     bool m_back1to2, m_text1to2;
     QPixmap m_currentBackground;
     QColor m_currentColor;
+    QString m_currentBackgroundVideoPath;
+    int m_backType;
 };
 
 #endif // VIRTUALOUTPUT_HPP

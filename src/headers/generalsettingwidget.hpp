@@ -24,6 +24,29 @@
 #include "settings.hpp"
 #include "addsongbookdialog.hpp"
 #include "theme.hpp"
+#include "virtualoutputsettingwidget.hpp"
+
+class FormatPreviewLabel : public QLabel
+{
+    Q_OBJECT
+public:
+    explicit FormatPreviewLabel(QWidget *parent = nullptr);
+    void setFormat(int width, int height, bool maintainAspect, bool cropToFit);
+    void updatePreview(int screenIndex);
+
+protected:
+    void paintEvent(QPaintEvent *event) override;
+
+private:
+    int m_screenWidth;
+    int m_screenHeight;
+    bool m_maintainAspect;
+    bool m_cropToFit;
+    int m_screenIndex;
+
+    void drawPreview(QPainter &painter, const QRect &rect);
+    QString getAspectRatioString(int width, int height);
+};
 
 namespace Ui {
 class GeneralSettingWidget;
@@ -44,6 +67,11 @@ private:
     QStringList monitors;
     QStringList themes;
     QList<int> themeIdList;
+    VirtualOutputSettingWidget *virtualOutputWidget;
+    FormatPreviewLabel *previewLabel1;
+    FormatPreviewLabel *previewLabel2;
+    FormatPreviewLabel *previewLabel3;
+    FormatPreviewLabel *previewLabel4;
 
 public slots:
     void setSettings(GeneralSettings settings);
@@ -67,6 +95,12 @@ private slots:
     void on_pushButtonAddTheme_clicked();
     void on_comboBoxTheme_activated(int index);
     void on_checkBoxUseDarkTheme_clicked();
+    void on_comboBoxFormat1_activated(int index);
+    void on_comboBoxFormat2_activated(int index);
+    void on_comboBoxFormat3_activated(int index);
+    void on_comboBoxFormat4_activated(int index);
+    void updateCustomResolutionState(int screenIndex);
+    void updateFormatPreview(int screenIndex);
 protected:
     virtual void changeEvent(QEvent *e);
 };

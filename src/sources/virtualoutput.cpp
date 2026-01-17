@@ -38,7 +38,8 @@ VirtualOutput::VirtualOutput(QObject *parent)
       m_textImSwitch2(false),
       m_isNewBackground(false),
       m_back1to2(true),
-      m_text1to2(true)
+      m_text1to2(true),
+      m_backType(B_NONE)
 {
     m_currentColor.setRgb(0, 0, 0, 0);
 
@@ -312,20 +313,31 @@ void VirtualOutput::renderNotText()
     m_imageProvider->setPixMap(blackPixmap);
 }
 
-void VirtualOutput::renderPassiveText(QPixmap &background, bool useBackground)
+void VirtualOutput::renderPassiveText(QPixmap &background, bool useBackground, TextSettings &pSets)
 {
     if (!m_enabled || !m_window || !m_imageProvider)
     {
         return;
     }
 
-    if (useBackground && !background.isNull())
+    if(pSets.backgroundType == B_VIDEO && !pSets.backgroundVideoPath.isEmpty())
     {
-        setBackPixmap(background, 1); // 1 = keep aspect ratio
+        setBackgroundVideo(pSets.backgroundVideoPath, pSets.backgroundVideoLoop, pSets.backgroundVideoFillMode);
+        m_backType = B_VIDEO;
     }
     else
     {
-        setBackPixmap(background, m_currentColor);
+        stopBackgroundVideo();
+        if (useBackground && !background.isNull())
+        {
+            setBackPixmap(background, 1); // 1 = keep aspect ratio
+            m_backType = B_PICTURE;
+        }
+        else
+        {
+            setBackPixmap(background, m_currentColor);
+            m_backType = B_NONE;
+        }
     }
 }
 
@@ -598,6 +610,54 @@ void VirtualOutput::setVideoSource(QObject *playerObject, QUrl path)
     {
         player->setProperty("source", path);
     }
+}
+
+void VirtualOutput::setBackgroundVideo(const QString &path, bool loop, int fillMode)
+{
+    if(path == m_currentBackgroundVideoPath)
+        return;
+
+    if (!m_window || !m_window->rootObject())
+    {
+        return;
+    }
+
+    QMetaObject::invokeMethod(m_window->rootObject(), "setBackgroundVideo",
+                              Q_ARG(QVariant, QVariant(path)),
+                              Q_ARG(QVariant, QVariant(loop)),
+                              Q_ARG(QVariant, QVariant(fillMode)));
+    m_currentBackgroundVideoPath = path;
+}
+
+void VirtualOutput::stopBackgroundVideo()
+{
+    if (!m_window || !m_window->rootObject())
+    {
+        return;
+    }
+
+    QMetaObject::invokeMethod(m_window->rootObject(), "stopBackgroundVideo");
+    m_currentBackgroundVideoPath.clear();
+}
+
+void VirtualOutput::pauseBackgroundVideo()
+{
+    if (!m_window || !m_window->rootObject())
+    {
+        return;
+    }
+
+    QMetaObject::invokeMethod(m_window->rootObject(), "pauseBackgroundVideo");
+}
+
+void VirtualOutput::resumeBackgroundVideo()
+{
+    if (!m_window || !m_window->rootObject())
+    {
+        return;
+    }
+
+    QMetaObject::invokeMethod(m_window->rootObject(), "resumeBackgroundVideo");
 }
 
 void VirtualOutput::exitSlideClicked()

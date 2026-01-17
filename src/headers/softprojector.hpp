@@ -21,6 +21,9 @@
 #define SOFTPROJECTOR_HPP
 
 #include <QMainWindow>
+#include <QLineEdit>
+#include <QPushButton>
+#include <QToolBar>
 #include "songwidget.hpp"
 #include "biblewidget.hpp"
 #include "announcewidget.hpp"
@@ -40,6 +43,10 @@
 #include "videoinfo.hpp"
 #include "slideshoweditor.hpp"
 #include "schedule.hpp"
+#include "virtualoutput.hpp"
+#include <QLineEdit>
+#include <QPushButton>
+#include <QToolBar>
 
 class QActionGroup;
 
@@ -76,6 +83,13 @@ public:
     PictureWidget *pictureWidget;
     MediaWidget *mediaPlayer;
     MediaControl *mediaControls;
+    VirtualOutput *virtualOutput;
+    QLineEdit *lowerThirdTextEdit;
+    QPushButton *lowerThirdShowButton;
+    QPushButton *lowerThirdHideButton;
+    QPushButton *lowerThirdClearButton;
+    QToolBar *streamToolBar;
+    bool lowerThirdVisible;
 
     bool showing; // whether we are currently showing to the projector
     Song current_song;
@@ -100,47 +114,17 @@ public slots:
     void setArrowCursor();
     void setAppDataDir(QDir d){appDataDir = d;}
 
-private:
-    Ui::SoftProjectorClass *ui;
-    SettingsDialog *settingsDialog;
-    HelpDialog *helpDialog;
-    PresentationType pType;
-    bool new_list;
-    QActionGroup *languageGroup;
-    QString languagePath;
-    QTranslator translator;
-
-    //For saving and opening schedule files
-    //QString project_file_path;
-    QString schedule_file_path;
-    bool is_schedule_saved;
-    QString cur_locale;
-    bool isSingleScreen;
-    bool hasDisplayScreen2;
-    bool hasDisplayScreen3;
-    bool hasDisplayScreen4;
-
-    // shortcuts
-    QShortcut *shpgUP;
-    QShortcut *shpgDwn;
-    QShortcut *shSart1;
-    QShortcut *shSart2;
-
-    // Pictures
-    QList<SlideShowItem> pictureShowList;
-
-    // video items
-//    Phonon::SeekSlider *playerSlider;
-//    Phonon::VolumeSlider *volumeSlider;
-    VideoInfo currentVideo;
-//    Phonon::AudioOutput *playerAudioOutput;
-
-    // Schelude list
-    QList<Schedule> schedule;
-    QDir appDataDir;
-
 private slots:
+    void toggleVirtualOutput();
+    void setupVirtualOutput();
+    void updateVirtualOutputSettings();
     void showDisplayScreen(bool show);
+
+    void showLowerThird();
+    void hideLowerThird();
+    void toggleLowerThird();
+    void onLowerThirdTextChanged(const QString &text);
+    void clearLowerThirdText();
 
     void applySetting(GeneralSettings &g, Theme &t, SlideShowSettings &s,
                       BibleVersionSettings &b1, BibleVersionSettings &b2,

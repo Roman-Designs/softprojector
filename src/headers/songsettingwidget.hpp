@@ -98,6 +98,29 @@ private slots:
     void on_pushButtonDefault_clicked();
     QString getFontText(QFont font);
     void on_pushButtonApplyToAll_clicked();
+    void on_radioButtonBgNone_toggled(bool checked);
+    void on_radioButtonBgSolid_toggled(bool checked);
+    void on_radioButtonBgImage_toggled(bool checked);
+    void on_radioButtonBgVideo_toggled(bool checked);
+    void on_radioButtonBgNone2_toggled(bool checked);
+    void on_radioButtonBgSolid2_toggled(bool checked);
+    void on_radioButtonBgImage2_toggled(bool checked);
+    void on_radioButtonBgVideo2_toggled(bool checked);
+    void on_radioButtonBgNone3_toggled(bool checked);
+    void on_radioButtonBgSolid3_toggled(bool checked);
+    void on_radioButtonBgImage3_toggled(bool checked);
+    void on_radioButtonBgVideo3_toggled(bool checked);
+    void on_radioButtonBgNone4_toggled(bool checked);
+    void on_radioButtonBgSolid4_toggled(bool checked);
+    void on_radioButtonBgImage4_toggled(bool checked);
+    void on_radioButtonBgVideo4_toggled(bool checked);
+    void on_toolButtonBrowseVideo_clicked();
+    void on_toolButtonBrowseVideo2_clicked();
+    void on_toolButtonBrowseVideo3_clicked();
+    void on_toolButtonBrowseVideo4_clicked();
+    void updateVideoPreview(int display);
+    void setBackgroundTypeRadio(int display, int type);
+    QString getSupportedVideoFormats();
 
 private:
     SongSettings mySettings;

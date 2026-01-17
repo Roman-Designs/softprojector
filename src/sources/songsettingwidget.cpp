@@ -19,6 +19,11 @@
 
 #include "../headers/songsettingwidget.hpp"
 #include "ui_songsettingwidget.h"
+#include <QFileDialog>
+#include <QColorDialog>
+#include <QFontDialog>
+#include <QFile>
+#include <QVideoFrame>
 
 SongSettingWidget::SongSettingWidget(QWidget *parent) :
     QWidget(parent),
@@ -111,17 +116,41 @@ void SongSettingWidget::getSettings(SongSettings &settings, SongSettings &settin
     mySettings4.endingPosition = ui->comboBoxEndingPosition4->currentIndex();
 
     // Save song background
-    mySettings.useBackground = ui->groupBoxSongBackground->isChecked();
+    mySettings.useBackground = ui->groupBoxBackground->isChecked();
     mySettings.backgroundName = ui->lineEditSongBackground->text();
+    mySettings.backgroundType = ui->radioButtonBgNone->isChecked() ? B_NONE :
+                                ui->radioButtonBgSolid->isChecked() ? B_SOLID_COLOR :
+                                ui->radioButtonBgImage->isChecked() ? B_PICTURE : B_VIDEO;
+    mySettings.backgroundVideoPath = ui->lineEditVideoPath->text();
+    mySettings.backgroundVideoLoop = ui->checkBoxVideoLoop->isChecked();
+    mySettings.backgroundVideoFillMode = ui->comboBoxVideoFillMode->currentIndex();
 
-    mySettings2.useBackground = ui->groupBoxSongBackground2->isChecked();
+    mySettings2.useBackground = ui->groupBoxBackground2->isChecked();
     mySettings2.backgroundName = ui->lineEditSongBackground2->text();
+    mySettings2.backgroundType = ui->radioButtonBgNone2->isChecked() ? B_NONE :
+                                 ui->radioButtonBgSolid2->isChecked() ? B_SOLID_COLOR :
+                                 ui->radioButtonBgImage2->isChecked() ? B_PICTURE : B_VIDEO;
+    mySettings2.backgroundVideoPath = ui->lineEditVideoPath2->text();
+    mySettings2.backgroundVideoLoop = ui->checkBoxVideoLoop2->isChecked();
+    mySettings2.backgroundVideoFillMode = ui->comboBoxVideoFillMode2->currentIndex();
 
-    mySettings3.useBackground = ui->groupBoxSongBackground3->isChecked();
+    mySettings3.useBackground = ui->groupBoxBackground3->isChecked();
     mySettings3.backgroundName = ui->lineEditSongBackground3->text();
+    mySettings3.backgroundType = ui->radioButtonBgNone3->isChecked() ? B_NONE :
+                                 ui->radioButtonBgSolid3->isChecked() ? B_SOLID_COLOR :
+                                 ui->radioButtonBgImage3->isChecked() ? B_PICTURE : B_VIDEO;
+    mySettings3.backgroundVideoPath = ui->lineEditVideoPath3->text();
+    mySettings3.backgroundVideoLoop = ui->checkBoxVideoLoop3->isChecked();
+    mySettings3.backgroundVideoFillMode = ui->comboBoxVideoFillMode3->currentIndex();
 
-    mySettings4.useBackground = ui->groupBoxSongBackground4->isChecked();
+    mySettings4.useBackground = ui->groupBoxBackground4->isChecked();
     mySettings4.backgroundName = ui->lineEditSongBackground4->text();
+    mySettings4.backgroundType = ui->radioButtonBgNone4->isChecked() ? B_NONE :
+                                 ui->radioButtonBgSolid4->isChecked() ? B_SOLID_COLOR :
+                                 ui->radioButtonBgImage4->isChecked() ? B_PICTURE : B_VIDEO;
+    mySettings4.backgroundVideoPath = ui->lineEditVideoPath4->text();
+    mySettings4.backgroundVideoLoop = ui->checkBoxVideoLoop4->isChecked();
+    mySettings4.backgroundVideoFillMode = ui->comboBoxVideoFillMode4->currentIndex();
 
     // Save alignment
     mySettings.textAlignmentV = ui->comboBoxVerticalAling->currentIndex();
@@ -254,17 +283,46 @@ void SongSettingWidget::loadSettings()
     ui->comboBoxEndingPosition4->setCurrentIndex(mySettings4.endingPosition);
 
     // Set Song Background
-    ui->groupBoxSongBackground->setChecked(mySettings.useBackground);
+    ui->groupBoxBackground->setChecked(mySettings.useBackground);
     ui->lineEditSongBackground->setText(mySettings.backgroundName);
 
-    ui->groupBoxSongBackground2->setChecked(mySettings2.useBackground);
+    ui->groupBoxBackground2->setChecked(mySettings2.useBackground);
     ui->lineEditSongBackground2->setText(mySettings2.backgroundName);
 
-    ui->groupBoxSongBackground3->setChecked(mySettings3.useBackground);
+    ui->groupBoxBackground3->setChecked(mySettings3.useBackground);
     ui->lineEditSongBackground3->setText(mySettings3.backgroundName);
 
-    ui->groupBoxSongBackground4->setChecked(mySettings4.useBackground);
+    ui->groupBoxBackground4->setChecked(mySettings4.useBackground);
     ui->lineEditSongBackground4->setText(mySettings4.backgroundName);
+
+    // Set background type radio buttons and visibility
+    setBackgroundTypeRadio(1, mySettings.backgroundType);
+    setBackgroundTypeRadio(2, mySettings2.backgroundType);
+    setBackgroundTypeRadio(3, mySettings3.backgroundType);
+    setBackgroundTypeRadio(4, mySettings4.backgroundType);
+
+    // Set video background settings
+    ui->lineEditVideoPath->setText(mySettings.backgroundVideoPath);
+    ui->checkBoxVideoLoop->setChecked(mySettings.backgroundVideoLoop);
+    ui->comboBoxVideoFillMode->setCurrentIndex(mySettings.backgroundVideoFillMode);
+
+    ui->lineEditVideoPath2->setText(mySettings2.backgroundVideoPath);
+    ui->checkBoxVideoLoop2->setChecked(mySettings2.backgroundVideoLoop);
+    ui->comboBoxVideoFillMode2->setCurrentIndex(mySettings2.backgroundVideoFillMode);
+
+    ui->lineEditVideoPath3->setText(mySettings3.backgroundVideoPath);
+    ui->checkBoxVideoLoop3->setChecked(mySettings3.backgroundVideoLoop);
+    ui->comboBoxVideoFillMode3->setCurrentIndex(mySettings3.backgroundVideoFillMode);
+
+    ui->lineEditVideoPath4->setText(mySettings4.backgroundVideoPath);
+    ui->checkBoxVideoLoop4->setChecked(mySettings4.backgroundVideoLoop);
+    ui->comboBoxVideoFillMode4->setCurrentIndex(mySettings4.backgroundVideoFillMode);
+
+    // Update video previews
+    updateVideoPreview(1);
+    updateVideoPreview(2);
+    updateVideoPreview(3);
+    updateVideoPreview(4);
 
     // Set Text Properties
     p.setColor(QPalette::Base,mySettings.textColor);
@@ -914,7 +972,7 @@ void SongSettingWidget::on_tBSongChangeGenBKColor4_clicked()
 void SongSettingWidget::on_groupBoxDisplay2_toggled(bool arg1)
 {
     ui->groupBoxEffects2->setVisible(arg1);
-    ui->groupBoxSongBackground2->setVisible(arg1);
+    ui->groupBoxBackground2->setVisible(arg1);
     ui->groupBoxSongEnding2->setVisible(arg1);
     ui->groupBoxSongInfo2->setVisible(arg1);
     ui->groupBoxTextProperties2->setVisible(arg1);
@@ -925,7 +983,7 @@ void SongSettingWidget::on_groupBoxDisplay2_toggled(bool arg1)
 void SongSettingWidget::on_groupBoxDisplay3_toggled(bool arg1)
 {
     ui->groupBoxEffects3->setVisible(arg1);
-    ui->groupBoxSongBackground3->setVisible(arg1);
+    ui->groupBoxBackground3->setVisible(arg1);
     ui->groupBoxSongEnding3->setVisible(arg1);
     ui->groupBoxSongInfo3->setVisible(arg1);
     ui->groupBoxTextProperties3->setVisible(arg1);
@@ -936,7 +994,7 @@ void SongSettingWidget::on_groupBoxDisplay3_toggled(bool arg1)
 void SongSettingWidget::on_groupBoxDisplay4_toggled(bool arg1)
 {
     ui->groupBoxEffects4->setVisible(arg1);
-    ui->groupBoxSongBackground4->setVisible(arg1);
+    ui->groupBoxBackground4->setVisible(arg1);
     ui->groupBoxSongEnding4->setVisible(arg1);
     ui->groupBoxSongInfo4->setVisible(arg1);
     ui->groupBoxTextProperties4->setVisible(arg1);
@@ -989,4 +1047,319 @@ void SongSettingWidget::setBackgroungds(QString name, QPixmap back)
     ui->lineEditSongBackground2->setText(name);
     ui->lineEditSongBackground3->setText(name);
     ui->lineEditSongBackground4->setText(name);
+}
+
+QString SongSettingWidget::getSupportedVideoFormats()
+{
+    QStringList formats;
+    formats << "*.mp4" << "*.avi" << "*.mkv" << "*.mov" << "*.wmv" << "*.flv" << "*.webm" << "*.mpeg" << "*.mpg";
+    return formats.join(" ");
+}
+
+void SongSettingWidget::updateVideoPreview(int display)
+{
+    QLabel *thumbnailLabel = nullptr;
+    QString videoPath;
+
+    switch(display) {
+    case 1:
+        thumbnailLabel = ui->labelVideoThumbnail;
+        videoPath = mySettings.backgroundVideoPath;
+        break;
+    case 2:
+        thumbnailLabel = ui->labelVideoThumbnail2;
+        videoPath = mySettings2.backgroundVideoPath;
+        break;
+    case 3:
+        thumbnailLabel = ui->labelVideoThumbnail3;
+        videoPath = mySettings3.backgroundVideoPath;
+        break;
+    case 4:
+        thumbnailLabel = ui->labelVideoThumbnail4;
+        videoPath = mySettings4.backgroundVideoPath;
+        break;
+    }
+
+    if(thumbnailLabel) {
+        if(!videoPath.isEmpty() && QFile::exists(videoPath)) {
+            QPixmap pixmap(videoPath);
+            if(!pixmap.isNull()) {
+                thumbnailLabel->setPixmap(pixmap.scaled(thumbnailLabel->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+            } else {
+                thumbnailLabel->setText(tr("Cannot load preview"));
+            }
+        } else {
+            QPixmap pm(thumbnailLabel->size());
+            pm.fill(Qt::black);
+            thumbnailLabel->setPixmap(pm);
+        }
+    }
+}
+
+void SongSettingWidget::setBackgroundTypeRadio(int display, int type)
+{
+    QRadioButton *radioNone = nullptr;
+    QRadioButton *radioSolid = nullptr;
+    QRadioButton *radioImage = nullptr;
+    QRadioButton *radioVideo = nullptr;
+    QGroupBox *groupImage = nullptr;
+    QGroupBox *groupVideo = nullptr;
+
+    switch(display) {
+    case 1:
+        radioNone = ui->radioButtonBgNone;
+        radioSolid = ui->radioButtonBgSolid;
+        radioImage = ui->radioButtonBgImage;
+        radioVideo = ui->radioButtonBgVideo;
+        groupImage = ui->groupBoxImageBackground;
+        groupVideo = ui->groupBoxVideoBackground;
+        break;
+    case 2:
+        radioNone = ui->radioButtonBgNone2;
+        radioSolid = ui->radioButtonBgSolid2;
+        radioImage = ui->radioButtonBgImage2;
+        radioVideo = ui->radioButtonBgVideo2;
+        groupImage = ui->groupBoxImageBackground2;
+        groupVideo = ui->groupBoxVideoBackground2;
+        break;
+    case 3:
+        radioNone = ui->radioButtonBgNone3;
+        radioSolid = ui->radioButtonBgSolid3;
+        radioImage = ui->radioButtonBgImage3;
+        radioVideo = ui->radioButtonBgVideo3;
+        groupImage = ui->groupBoxImageBackground3;
+        groupVideo = ui->groupBoxVideoBackground3;
+        break;
+    case 4:
+        radioNone = ui->radioButtonBgNone4;
+        radioSolid = ui->radioButtonBgSolid4;
+        radioImage = ui->radioButtonBgImage4;
+        radioVideo = ui->radioButtonBgVideo4;
+        groupImage = ui->groupBoxImageBackground4;
+        groupVideo = ui->groupBoxVideoBackground4;
+        break;
+    }
+
+    if(radioNone && radioSolid && radioImage && radioVideo && groupImage && groupVideo) {
+        radioNone->blockSignals(true);
+        radioSolid->blockSignals(true);
+        radioImage->blockSignals(true);
+        radioVideo->blockSignals(true);
+
+        switch(type) {
+        case B_NONE:
+            radioNone->setChecked(true);
+            groupImage->setVisible(false);
+            groupVideo->setVisible(false);
+            break;
+        case B_SOLID_COLOR:
+            radioSolid->setChecked(true);
+            groupImage->setVisible(false);
+            groupVideo->setVisible(false);
+            break;
+        case B_PICTURE:
+            radioImage->setChecked(true);
+            groupImage->setVisible(true);
+            groupVideo->setVisible(false);
+            break;
+        case B_VIDEO:
+            radioVideo->setChecked(true);
+            groupImage->setVisible(false);
+            groupVideo->setVisible(true);
+            break;
+        }
+
+        radioNone->blockSignals(false);
+        radioSolid->blockSignals(false);
+        radioImage->blockSignals(false);
+        radioVideo->blockSignals(false);
+    }
+}
+
+void SongSettingWidget::on_radioButtonBgNone_toggled(bool checked)
+{
+    if(checked) {
+        mySettings.backgroundType = B_NONE;
+        ui->groupBoxImageBackground->setVisible(false);
+        ui->groupBoxVideoBackground->setVisible(false);
+    }
+}
+
+void SongSettingWidget::on_radioButtonBgSolid_toggled(bool checked)
+{
+    if(checked) {
+        mySettings.backgroundType = B_SOLID_COLOR;
+        ui->groupBoxImageBackground->setVisible(false);
+        ui->groupBoxVideoBackground->setVisible(false);
+    }
+}
+
+void SongSettingWidget::on_radioButtonBgImage_toggled(bool checked)
+{
+    if(checked) {
+        mySettings.backgroundType = B_PICTURE;
+        ui->groupBoxImageBackground->setVisible(true);
+        ui->groupBoxVideoBackground->setVisible(false);
+    }
+}
+
+void SongSettingWidget::on_radioButtonBgVideo_toggled(bool checked)
+{
+    if(checked) {
+        mySettings.backgroundType = B_VIDEO;
+        ui->groupBoxImageBackground->setVisible(false);
+        ui->groupBoxVideoBackground->setVisible(true);
+    }
+}
+
+void SongSettingWidget::on_radioButtonBgNone2_toggled(bool checked)
+{
+    if(checked) {
+        mySettings2.backgroundType = B_NONE;
+        ui->groupBoxImageBackground2->setVisible(false);
+        ui->groupBoxVideoBackground2->setVisible(false);
+    }
+}
+
+void SongSettingWidget::on_radioButtonBgSolid2_toggled(bool checked)
+{
+    if(checked) {
+        mySettings2.backgroundType = B_SOLID_COLOR;
+        ui->groupBoxImageBackground2->setVisible(false);
+        ui->groupBoxVideoBackground2->setVisible(false);
+    }
+}
+
+void SongSettingWidget::on_radioButtonBgImage2_toggled(bool checked)
+{
+    if(checked) {
+        mySettings2.backgroundType = B_PICTURE;
+        ui->groupBoxImageBackground2->setVisible(true);
+        ui->groupBoxVideoBackground2->setVisible(false);
+    }
+}
+
+void SongSettingWidget::on_radioButtonBgVideo2_toggled(bool checked)
+{
+    if(checked) {
+        mySettings2.backgroundType = B_VIDEO;
+        ui->groupBoxImageBackground2->setVisible(false);
+        ui->groupBoxVideoBackground2->setVisible(true);
+    }
+}
+
+void SongSettingWidget::on_radioButtonBgNone3_toggled(bool checked)
+{
+    if(checked) {
+        mySettings3.backgroundType = B_NONE;
+        ui->groupBoxImageBackground3->setVisible(false);
+        ui->groupBoxVideoBackground3->setVisible(false);
+    }
+}
+
+void SongSettingWidget::on_radioButtonBgSolid3_toggled(bool checked)
+{
+    if(checked) {
+        mySettings3.backgroundType = B_SOLID_COLOR;
+        ui->groupBoxImageBackground3->setVisible(false);
+        ui->groupBoxVideoBackground3->setVisible(false);
+    }
+}
+
+void SongSettingWidget::on_radioButtonBgImage3_toggled(bool checked)
+{
+    if(checked) {
+        mySettings3.backgroundType = B_PICTURE;
+        ui->groupBoxImageBackground3->setVisible(true);
+        ui->groupBoxVideoBackground3->setVisible(false);
+    }
+}
+
+void SongSettingWidget::on_radioButtonBgVideo3_toggled(bool checked)
+{
+    if(checked) {
+        mySettings3.backgroundType = B_VIDEO;
+        ui->groupBoxImageBackground3->setVisible(false);
+        ui->groupBoxVideoBackground3->setVisible(true);
+    }
+}
+
+void SongSettingWidget::on_radioButtonBgNone4_toggled(bool checked)
+{
+    if(checked) {
+        mySettings4.backgroundType = B_NONE;
+        ui->groupBoxImageBackground4->setVisible(false);
+        ui->groupBoxVideoBackground4->setVisible(false);
+    }
+}
+
+void SongSettingWidget::on_radioButtonBgSolid4_toggled(bool checked)
+{
+    if(checked) {
+        mySettings4.backgroundType = B_SOLID_COLOR;
+        ui->groupBoxImageBackground4->setVisible(false);
+        ui->groupBoxVideoBackground4->setVisible(false);
+    }
+}
+
+void SongSettingWidget::on_radioButtonBgImage4_toggled(bool checked)
+{
+    if(checked) {
+        mySettings4.backgroundType = B_PICTURE;
+        ui->groupBoxImageBackground4->setVisible(true);
+        ui->groupBoxVideoBackground4->setVisible(false);
+    }
+}
+
+void SongSettingWidget::on_radioButtonBgVideo4_toggled(bool checked)
+{
+    if(checked) {
+        mySettings4.backgroundType = B_VIDEO;
+        ui->groupBoxImageBackground4->setVisible(false);
+        ui->groupBoxVideoBackground4->setVisible(true);
+    }
+}
+
+void SongSettingWidget::on_toolButtonBrowseVideo_clicked()
+{
+    QString filename = QFileDialog::getOpenFileName(this, tr("Select a video for background"),
+                                                    ".", tr("Video(%1)").arg(getSupportedVideoFormats()));
+    if(!filename.isNull()) {
+        mySettings.backgroundVideoPath = filename;
+        ui->lineEditVideoPath->setText(filename);
+        updateVideoPreview(1);
+    }
+}
+
+void SongSettingWidget::on_toolButtonBrowseVideo2_clicked()
+{
+    QString filename = QFileDialog::getOpenFileName(this, tr("Select a video for background"),
+                                                    ".", tr("Video(%1)").arg(getSupportedVideoFormats()));
+    if(!filename.isNull()) {
+        mySettings2.backgroundVideoPath = filename;
+        ui->lineEditVideoPath2->setText(filename);
+        updateVideoPreview(2);
+    }
+}
+
+void SongSettingWidget::on_toolButtonBrowseVideo3_clicked()
+{
+    QString filename = QFileDialog::getOpenFileName(this, tr("Select a video for background"),
+                                                    ".", tr("Video(%1)").arg(getSupportedVideoFormats()));
+    if(!filename.isNull()) {
+        mySettings3.backgroundVideoPath = filename;
+        ui->lineEditVideoPath3->setText(filename);
+        updateVideoPreview(3);
+    }
+}
+
+void SongSettingWidget::on_toolButtonBrowseVideo4_clicked()
+{
+    QString filename = QFileDialog::getOpenFileName(this, tr("Select a video for background"),
+                                                    ".", tr("Video(%1)").arg(getSupportedVideoFormats()));
+    if(!filename.isNull()) {
+        mySettings4.backgroundVideoPath = filename;
+        ui->lineEditVideoPath4->setText(filename);
+        updateVideoPreview(4);
+    }
 }

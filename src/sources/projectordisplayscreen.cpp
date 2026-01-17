@@ -32,23 +32,22 @@ ProjectorDisplayScreen::ProjectorDisplayScreen(QWidget *parent) :
     dispView->engine()->addImageProvider(QLatin1String("improvider"),imProvider);
     QWidget *w = QWidget::createWindowContainer(dispView,this);
     dispView->setSource(QUrl("qrc:/qml/qml/DisplayArea.qml"));
+    dispView->setResizeMode(QQuickView::SizeRootObjectToView);
     ui->verticalLayout->addWidget(w);
 
-    // Create Display object for retriaving signals back from the display screen
+    backImSwitch1 = backImSwitch2 = textImSwitch1 = textImSwitch2 = false;
+    back1to2 = text1to2 = isNewBack = true;
+    m_color.setRgb(0,0,0,0);
+
     QObject *dispObj = dispView->rootObject();
     connect(dispObj,SIGNAL(exitClicked()),this,SLOT(exitSlideClicked()));
     connect(dispObj,SIGNAL(nextClicked()),this,SLOT(nextSlideClicked()));
     connect(dispObj,SIGNAL(prevClicked()),this,SLOT(prevSlideClicked()));
 
-    // Connect Media Player objects
     connect(dispObj,SIGNAL(positionChanged(int)),this,SLOT(videoPositionChanged(int)));
     connect(dispObj,SIGNAL(durationChanged(int)),this,SLOT(videoDurationChanged(int)));
     connect(dispObj,SIGNAL(playbackStateChanged(int)),this,SLOT(videoPlaybackStateChanged(int)));
     connect(dispObj,SIGNAL(playbackStopped()),this,SLOT(playbackStopped()));
-
-    backImSwitch1 = backImSwitch2 = textImSwitch1 = textImSwitch2 = false;
-    back1to2 = text1to2 = isNewBack = true;
-    m_color.setRgb(0,0,0,0);// = QColor(QColor::black());
 }
 
 ProjectorDisplayScreen::~ProjectorDisplayScreen()
@@ -59,7 +58,114 @@ ProjectorDisplayScreen::~ProjectorDisplayScreen()
 
 void ProjectorDisplayScreen::resetImGenSize()
 {
-    imGen.setScreenSize(this->size());
+    QSize renderSize = calculateEffectiveRenderSize();
+    imGen.setScreenSize(renderSize);
+    m_effectiveRenderSize = renderSize;
+
+    QObject *root = dispView->rootObject();
+    if(root)
+    {
+        root->setProperty("width", renderSize.width());
+        root->setProperty("height", renderSize.height());
+    }
+
+    qDebug() << "ProjectorDisplayScreen::resetImGenSize - Render size:" << renderSize
+             << "Format aspectRatio:" << m_formatSettings.aspectRatio
+             << "maintainAspect:" << m_formatSettings.maintainAspect
+             << "cropToFit:" << m_formatSettings.cropToFit;
+}
+
+void ProjectorDisplayScreen::setFormatSettings(const ScreenFormatSettings &settings)
+{
+    m_formatSettings = settings;
+    qDebug() << "ProjectorDisplayScreen::setFormatSettings - aspectRatio:" << settings.aspectRatio
+             << "customWidth:" << settings.customWidth
+             << "customHeight:" << settings.customHeight
+             << "maintainAspect:" << settings.maintainAspect
+             << "cropToFit:" << settings.cropToFit;
+    applyFormat();
+}
+
+void ProjectorDisplayScreen::applyFormat()
+{
+    resetImGenSize();
+}
+
+QSize ProjectorDisplayScreen::getFormatResolution() const
+{
+    switch(m_formatSettings.aspectRatio)
+    {
+    case FORMAT_AUTO:
+        return QSize(0, 0);
+    case FORMAT_SD_4_3:
+        return QSize(1024, 768);
+    case FORMAT_HD_16_9:
+        return QSize(1920, 1080);
+    case FORMAT_HD_16_10:
+        return QSize(1920, 1200);
+    case FORMAT_ULTRAWIDE_21_9:
+        return QSize(2560, 1080);
+    case FORMAT_VERTICAL_9_16:
+        return QSize(1080, 1920);
+    case FORMAT_CUSTOM:
+        return QSize(m_formatSettings.customWidth, m_formatSettings.customHeight);
+    default:
+        return QSize(0, 0);
+    }
+}
+
+void ProjectorDisplayScreen::calculateEffectiveRenderSize()
+{
+    QSize formatRes = getFormatResolution();
+    QSize windowSize = this->size();
+
+    if(m_formatSettings.aspectRatio == FORMAT_AUTO)
+    {
+        m_effectiveRenderSize = windowSize;
+        return;
+    }
+
+    if(!m_formatSettings.maintainAspect)
+    {
+        m_effectiveRenderSize = windowSize;
+        return;
+    }
+
+    double formatAspect = static_cast<double>(formatRes.width()) / static_cast<double>(formatRes.height());
+    double windowAspect = static_cast<double>(windowSize.width()) / static_cast<double>(windowSize.height());
+
+    if(qAbs(formatAspect - windowAspect) < 0.01)
+    {
+        m_effectiveRenderSize = windowSize;
+        return;
+    }
+
+    if(m_formatSettings.cropToFit)
+    {
+        if(windowAspect > formatAspect)
+        {
+            int newHeight = static_cast<int>(windowSize.width() / formatAspect);
+            m_effectiveRenderSize = QSize(windowSize.width(), newHeight);
+        }
+        else
+        {
+            int newWidth = static_cast<int>(windowSize.height() * formatAspect);
+            m_effectiveRenderSize = QSize(newWidth, windowSize.height());
+        }
+    }
+    else
+    {
+        if(windowAspect > formatAspect)
+        {
+            int newWidth = static_cast<int>(windowSize.height() * formatAspect);
+            m_effectiveRenderSize = QSize(newWidth, windowSize.height());
+        }
+        else
+        {
+            int newHeight = static_cast<int>(windowSize.width() / formatAspect);
+            m_effectiveRenderSize = QSize(windowSize.width(), newHeight);
+        }
+    }
 }
 
 void ProjectorDisplayScreen::setBackPixmap(QPixmap p, int fillMode)
@@ -300,18 +406,28 @@ void ProjectorDisplayScreen::renderNotText()
     updateScreen();
 }
 
-void ProjectorDisplayScreen::renderPassiveText(QPixmap &back, bool useBack)
+void ProjectorDisplayScreen::renderPassiveText(QPixmap &back, bool useBack, TextSettings &pSets)
 {
     setTextPixmap(imGen.generateEmptyImage());
-    if(useBack)
+
+    if(pSets.backgroundType == B_VIDEO && !pSets.backgroundVideoPath.isEmpty())
     {
-        backType = B_PICTURE;
-        setBackPixmap(back,0);
+        setBackgroundVideo(pSets.backgroundVideoPath, pSets.backgroundVideoLoop, pSets.backgroundVideoFillMode);
+        backType = B_VIDEO;
     }
     else
     {
-        backType = B_NONE;
-        setBackPixmap(imGen.generateColorImage(m_color),0);
+        stopBackgroundVideo();
+        if(useBack)
+        {
+            backType = B_PICTURE;
+            setBackPixmap(back,0);
+        }
+        else
+        {
+            backType = B_NONE;
+            setBackPixmap(imGen.generateColorImage(m_color),0);
+        }
     }
 
     updateScreen();
@@ -319,7 +435,6 @@ void ProjectorDisplayScreen::renderPassiveText(QPixmap &back, bool useBack)
 
 void ProjectorDisplayScreen::renderBibleText(Verse bVerse, BibleSettings &bSets)
 {
-    // TODO: This is temporary until database is fixed
     if(bSets.useFading)
     {
         tranType = TR_FADE;
@@ -329,32 +444,33 @@ void ProjectorDisplayScreen::renderBibleText(Verse bVerse, BibleSettings &bSets)
         tranType = TR_NONE;
     }
 
-    if(bSets.useBackground)
+    if(bSets.backgroundType == B_VIDEO && !bSets.backgroundVideoPath.isEmpty())
     {
-        setBackPixmap(bSets.backgroundPix,0);
-        backType = B_PICTURE;
+        setBackgroundVideo(bSets.backgroundVideoPath, bSets.backgroundVideoLoop, bSets.backgroundVideoFillMode);
+        backType = B_VIDEO;
     }
     else
     {
-        setBackPixmap(imGen.generateColorImage(m_color),0);
-        backType = B_NONE;
+        stopBackgroundVideo();
+        if(bSets.useBackground)
+        {
+            setBackPixmap(bSets.backgroundPix,0);
+            backType = B_PICTURE;
+        }
+        else
+        {
+            setBackPixmap(imGen.generateColorImage(m_color),0);
+            backType = B_NONE;
+        }
     }
 
-    //tranType = bSets.transitionType;
-    //backType = bSets.backgroundType;
     setTextPixmap(imGen.generateBibleImage(bVerse,bSets));
-    //setBackPixmap(bSets.backgroundPix,bSets.backgroundColor);
-    //if(backType ==2)
-    //{
-    //    setVideoSource(bSets.backgroundVideoPath);
-    //}
 
     updateScreen();
 }
 
 void ProjectorDisplayScreen::renderSongText(Stanza stanza, SongSettings &sSets)
 {
-    // TODO: This is temporary until database is fixed
     if(sSets.useFading)
     {
         tranType = TR_FADE;
@@ -364,29 +480,33 @@ void ProjectorDisplayScreen::renderSongText(Stanza stanza, SongSettings &sSets)
         tranType = TR_NONE;
     }
 
-    if(sSets.useBackground)
+    if(sSets.backgroundType == B_VIDEO && !sSets.backgroundVideoPath.isEmpty())
     {
-        setBackPixmap(sSets.backgroundPix,0);
-        backType = B_PICTURE;
+        setBackgroundVideo(sSets.backgroundVideoPath, sSets.backgroundVideoLoop, sSets.backgroundVideoFillMode);
+        backType = B_VIDEO;
     }
     else
     {
-        setBackPixmap(imGen.generateColorImage(m_color),0);
-        backType = B_NONE;
+        stopBackgroundVideo();
+        if(sSets.useBackground)
+        {
+            setBackPixmap(sSets.backgroundPix,0);
+            backType = B_PICTURE;
+        }
+        else
+        {
+            setBackPixmap(imGen.generateColorImage(m_color),0);
+            backType = B_NONE;
+        }
     }
 
     setTextPixmap(imGen.generateSongImage(stanza,sSets));
-    //if(sSets.backgroundType == 1)
-    //    setBackPixmap(sSets.backgroundPix,0);
-    //else
-    //    setBackPixmap(imGen.generateColorImage(m_color),0);
-    //tranType = sSets.transitionType;
+
     updateScreen();
 }
 
 void ProjectorDisplayScreen::renderAnnounceText(AnnounceSlide announce, TextSettings &aSets)
 {
-    // TODO: This is temporary until database is fixed
     if(aSets.useFading)
     {
         tranType = TR_FADE;
@@ -396,23 +516,28 @@ void ProjectorDisplayScreen::renderAnnounceText(AnnounceSlide announce, TextSett
         tranType = TR_NONE;
     }
 
-    if(aSets.useBackground)
+    if(aSets.backgroundType == B_VIDEO && !aSets.backgroundVideoPath.isEmpty())
     {
-        setBackPixmap(aSets.backgroundPix,0);
-        backType = B_PICTURE;
+        setBackgroundVideo(aSets.backgroundVideoPath, aSets.backgroundVideoLoop, aSets.backgroundVideoFillMode);
+        backType = B_VIDEO;
     }
     else
     {
-        setBackPixmap(imGen.generateColorImage(m_color),0);
-        backType = B_NONE;
+        stopBackgroundVideo();
+        if(aSets.useBackground)
+        {
+            setBackPixmap(aSets.backgroundPix,0);
+            backType = B_PICTURE;
+        }
+        else
+        {
+            setBackPixmap(imGen.generateColorImage(m_color),0);
+            backType = B_NONE;
+        }
     }
 
     setTextPixmap(imGen.generateAnnounceImage(announce,aSets));
-    //if(aSets.transitionType == 1)
-    //    setBackPixmap(aSets.backgroundPix,0);
-    //else
-    //    setBackPixmap(imGen.generateColorImage(m_color),0);
-    //tranType = aSets.transitionType;
+
     updateScreen();
 }
 
@@ -550,4 +675,44 @@ void ProjectorDisplayScreen::setControlsVisible(bool visible)
 {
     QObject *root = dispView->rootObject();
     QMetaObject::invokeMethod(root,"setControlsVisible",Q_ARG(QVariant,visible));
+}
+
+void ProjectorDisplayScreen::setBackgroundVideo(const QString &path, bool loop, int fillMode)
+{
+    if(path == m_currentBackgroundVideoPath)
+        return;
+
+    QObject *root = dispView->rootObject();
+    if(root)
+    {
+        QMetaObject::invokeMethod(root,"setBackgroundVideo",
+                                  Q_ARG(QVariant, QVariant(path)),
+                                  Q_ARG(QVariant, QVariant(loop)),
+                                  Q_ARG(QVariant, QVariant(fillMode)));
+        m_currentBackgroundVideoPath = path;
+    }
+}
+
+void ProjectorDisplayScreen::stopBackgroundVideo()
+{
+    QObject *root = dispView->rootObject();
+    if(root)
+    {
+        QMetaObject::invokeMethod(root,"stopBackgroundVideo");
+        m_currentBackgroundVideoPath.clear();
+    }
+}
+
+void ProjectorDisplayScreen::pauseBackgroundVideo()
+{
+    QObject *root = dispView->rootObject();
+    if(root)
+        QMetaObject::invokeMethod(root,"pauseBackgroundVideo");
+}
+
+void ProjectorDisplayScreen::resumeBackgroundVideo()
+{
+    QObject *root = dispView->rootObject();
+    if(root)
+        QMetaObject::invokeMethod(root,"resumeBackgroundVideo");
 }

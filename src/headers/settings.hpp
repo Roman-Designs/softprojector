@@ -26,6 +26,9 @@
 
 void saveIndividualSettings(QSqlQuery &sq, QString sId, int tId, QString name, const QVariant &value);
 void updateIndividualSettings(QSqlQuery &sq, QString sId, int tId, QString name, const QVariant &value);
+void saveScreenFormatSettings(int screenIndex, const ScreenFormatSettings &settings);
+void loadScreenFormatSettings(int screenIndex, ScreenFormatSettings &settings);
+void updateScreenFormatSettings(int screenIndex, const ScreenFormatSettings &settings);
 
 enum HorizontalAlignment
 {
@@ -89,6 +92,17 @@ enum SongEndingType
     SE_COPYRIGHT
 };
 
+enum OutputFormat
+{
+    FORMAT_AUTO,
+    FORMAT_SD_4_3,
+    FORMAT_HD_16_9,
+    FORMAT_HD_16_10,
+    FORMAT_ULTRAWIDE_21_9,
+    FORMAT_VERTICAL_9_16,
+    FORMAT_CUSTOM
+};
+
 class TextSettingsBase
 {
 public:
@@ -101,6 +115,7 @@ public:
     bool isChangedTextFont, isChangedTextColor, isChangedTextShadowColor;
     bool isChangedAlingV, isChangedAlingH, isChangesTranType, isChangedEffectType;
     bool isChangedBackType, isChangedBackColor, isChangedBackPix, isChangedBackVid;
+    bool isChangedBackVidLoop, isChangedBackVidFillMode;
     bool isChangedScreenUse, isChangedScreenPos, isChangedSameDisp2, isChangedSameDisp3, isChangedSameDisp4;
 
     //Text
@@ -126,6 +141,8 @@ public:
     QString backgroundName;
     QPixmap backgroundPix; //TODO: Rename to backgroundPix
     QString backgroundVideoPath;
+    bool backgroundVideoLoop;      // Loop video playback, default true
+    int backgroundVideoFillMode;   // 0=stretch, 1=fit, 2=fill
 
 
     // older implementation, Use it for now
@@ -293,6 +310,52 @@ public:
     qreal opacity;
 };
 
+class VirtualOutputSettings
+{
+public:
+    VirtualOutputSettings();
+
+    bool enabled;
+    int width;
+    int height;
+    bool showLowerThird;
+    QString overlayPath;
+    bool useCustomTheme;
+    int streamThemeId;
+    bool mirrorDisplay1;
+    QString lowerThirdFont;
+    QColor lowerThirdBgColor;
+    QColor lowerThirdTextColor;
+
+    void save();
+    void save(QSqlQuery &sq);
+    void load();
+    void load(QSqlQuery &sq);
+    void update();
+    void update(QSqlQuery &sq);
+    bool isValid() const;
+    bool operator==(const VirtualOutputSettings &other) const;
+};
+
+class ScreenFormatSettings
+{
+public:
+    ScreenFormatSettings();
+
+    int aspectRatio;
+    int customWidth;
+    int customHeight;
+    bool maintainAspect;
+    bool cropToFit;
+
+    void save();
+    void save(QSqlQuery &sq);
+    void load();
+    void load(QSqlQuery &sq);
+    void update();
+    void update(QSqlQuery &sq);
+};
+
 class GeneralSettings
 {   // To store General Program Settings
 public:
@@ -304,6 +367,8 @@ public:
     int displayScreen3; // stores Tertiary display screen location
     int displayScreen4; // stores Quaternary display screen location
     DisplayControlsSettings displayControls;
+    VirtualOutputSettings virtualOutput;
+    ScreenFormatSettings screenFormat[4];
     int currentThemeId;
     bool displayOnStartUp;
     bool settingsChangedAll;

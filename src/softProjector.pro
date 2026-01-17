@@ -88,7 +88,9 @@ SOURCES += sources/main.cpp \
     sources/projectordisplayscreen.cpp \
     sources/imagegenerator.cpp \
     sources/spimageprovider.cpp \
-    sources/mediacontrol.cpp
+    sources/mediacontrol.cpp \
+    sources/virtualoutput.cpp \
+    sources/virtualoutputsettingwidget.cpp
 HEADERS += headers/softprojector.hpp \
     headers/songwidget.hpp \
     headers/biblewidget.hpp \
@@ -131,7 +133,9 @@ HEADERS += headers/softprojector.hpp \
     headers/projectordisplayscreen.hpp \
     headers/imagegenerator.hpp \
     headers/spimageprovider.hpp \
-    headers/mediacontrol.hpp
+    headers/mediacontrol.hpp \
+    headers/virtualoutput.hpp \
+    headers/virtualoutputsettingwidget.hpp
 FORMS += ui/softprojector.ui \
     ui/songwidget.ui \
     ui/biblewidget.ui \
@@ -158,7 +162,8 @@ FORMS += ui/softprojector.ui \
     ui/moduledownloaddialog.ui \
     ui/moduleprogressdialog.ui \
     ui/projectordisplayscreen.ui \
-    ui/mediacontrol.ui
+    ui/mediacontrol.ui \
+    ui/virtualoutputsettingwidget.ui
 TRANSLATIONS += translations/softpro_de.ts\
     translations/softpro_ru.ts\
     translations/softpro_cs.ts\

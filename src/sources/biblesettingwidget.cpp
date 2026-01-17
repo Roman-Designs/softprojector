@@ -19,6 +19,10 @@
 
 #include "../headers/biblesettingwidget.hpp"
 #include "ui_biblesettingwidget.h"
+#include <QFileDialog>
+#include <QColorDialog>
+#include <QFontDialog>
+#include <QFile>
 
 BibleSettingWidget::BibleSettingWidget(QWidget *parent) :
     QWidget(parent),
@@ -85,6 +89,24 @@ void BibleSettingWidget::getSettings(BibleSettings &settings, BibleSettings &set
 
     mySettings4.useBackground = ui->groupBoxBackground4->isChecked();
     mySettings4.backgroundName = ui->lineEditBackPath4->text();
+
+    // Background type is already set by radio button handlers
+    // Video background settings
+    mySettings.backgroundVideoPath = ui->lineEditVideoPath->text();
+    mySettings.backgroundVideoLoop = ui->checkBoxVideoLoop->isChecked();
+    mySettings.backgroundVideoFillMode = ui->comboBoxVideoFillMode->currentIndex();
+
+    mySettings2.backgroundVideoPath = ui->lineEditVideoPath2->text();
+    mySettings2.backgroundVideoLoop = ui->checkBoxVideoLoop2->isChecked();
+    mySettings2.backgroundVideoFillMode = ui->comboBoxVideoFillMode2->currentIndex();
+
+    mySettings3.backgroundVideoPath = ui->lineEditVideoPath3->text();
+    mySettings3.backgroundVideoLoop = ui->checkBoxVideoLoop3->isChecked();
+    mySettings3.backgroundVideoFillMode = ui->comboBoxVideoFillMode3->currentIndex();
+
+    mySettings4.backgroundVideoPath = ui->lineEditVideoPath4->text();
+    mySettings4.backgroundVideoLoop = ui->checkBoxVideoLoop4->isChecked();
+    mySettings4.backgroundVideoFillMode = ui->comboBoxVideoFillMode4->currentIndex();
 
     // Background Color 4 Text Group
     mySettings.bibleAddBKColorToText = ui->groupBoxAddBackgroundToText->isChecked();
@@ -321,7 +343,36 @@ void BibleSettingWidget::loadSettings()
     ui->lineEditBackPath3->setText(mySettings3.backgroundName);
 
     ui->groupBoxBackground4->setChecked(mySettings4.useBackground);
-    ui->lineEditBackPath4->setText(mySettings4.backgroundName);    
+    ui->lineEditBackPath4->setText(mySettings4.backgroundName);
+
+    // Set background type radio buttons and visibility
+    setBackgroundTypeRadio(1, mySettings.backgroundType);
+    setBackgroundTypeRadio(2, mySettings2.backgroundType);
+    setBackgroundTypeRadio(3, mySettings3.backgroundType);
+    setBackgroundTypeRadio(4, mySettings4.backgroundType);
+
+    // Set video background settings
+    ui->lineEditVideoPath->setText(mySettings.backgroundVideoPath);
+    ui->checkBoxVideoLoop->setChecked(mySettings.backgroundVideoLoop);
+    ui->comboBoxVideoFillMode->setCurrentIndex(mySettings.backgroundVideoFillMode);
+
+    ui->lineEditVideoPath2->setText(mySettings2.backgroundVideoPath);
+    ui->checkBoxVideoLoop2->setChecked(mySettings2.backgroundVideoLoop);
+    ui->comboBoxVideoFillMode2->setCurrentIndex(mySettings2.backgroundVideoFillMode);
+
+    ui->lineEditVideoPath3->setText(mySettings3.backgroundVideoPath);
+    ui->checkBoxVideoLoop3->setChecked(mySettings3.backgroundVideoLoop);
+    ui->comboBoxVideoFillMode3->setCurrentIndex(mySettings3.backgroundVideoFillMode);
+
+    ui->lineEditVideoPath4->setText(mySettings4.backgroundVideoPath);
+    ui->checkBoxVideoLoop4->setChecked(mySettings4.backgroundVideoLoop);
+    ui->comboBoxVideoFillMode4->setCurrentIndex(mySettings4.backgroundVideoFillMode);
+
+    // Update video previews
+    updateVideoPreview(1);
+    updateVideoPreview(2);
+    updateVideoPreview(3);
+    updateVideoPreview(4);
 
     // Set text color
     QPalette p;
@@ -1406,4 +1457,294 @@ void BibleSettingWidget::setBackgroungds(QString name, QPixmap back)
     ui->lineEditBackPath2->setText(name);
     ui->lineEditBackPath3->setText(name);
     ui->lineEditBackPath4->setText(name);
+}
+
+QString BibleSettingWidget::getSupportedVideoFormats()
+{
+    return "Video files (*.mp4 *.avi *.mov *.webm *.mkv *.flv *.wmv);;All files (*)";
+}
+
+void BibleSettingWidget::on_radioButtonBgNone_toggled(bool checked)
+{
+    if(checked)
+    {
+        mySettings.backgroundType = B_NONE;
+        ui->groupBoxImageBackground->setVisible(false);
+        ui->groupBoxVideoBackground->setVisible(false);
+    }
+}
+
+void BibleSettingWidget::on_radioButtonBgSolid_toggled(bool checked)
+{
+    if(checked)
+    {
+        mySettings.backgroundType = B_SOLID_COLOR;
+        ui->groupBoxImageBackground->setVisible(false);
+        ui->groupBoxVideoBackground->setVisible(false);
+    }
+}
+
+void BibleSettingWidget::on_radioButtonBgImage_toggled(bool checked)
+{
+    if(checked)
+    {
+        mySettings.backgroundType = B_PICTURE;
+        ui->groupBoxImageBackground->setVisible(true);
+        ui->groupBoxVideoBackground->setVisible(false);
+    }
+}
+
+void BibleSettingWidget::on_radioButtonBgVideo_toggled(bool checked)
+{
+    if(checked)
+    {
+        mySettings.backgroundType = B_VIDEO;
+        ui->groupBoxImageBackground->setVisible(false);
+        ui->groupBoxVideoBackground->setVisible(true);
+    }
+}
+
+void BibleSettingWidget::on_radioButtonBgNone2_toggled(bool checked)
+{
+    if(checked)
+    {
+        mySettings2.backgroundType = B_NONE;
+        ui->groupBoxImageBackground2->setVisible(false);
+        ui->groupBoxVideoBackground2->setVisible(false);
+    }
+}
+
+void BibleSettingWidget::on_radioButtonBgSolid2_toggled(bool checked)
+{
+    if(checked)
+    {
+        mySettings2.backgroundType = B_SOLID_COLOR;
+        ui->groupBoxImageBackground2->setVisible(false);
+        ui->groupBoxVideoBackground2->setVisible(false);
+    }
+}
+
+void BibleSettingWidget::on_radioButtonBgImage2_toggled(bool checked)
+{
+    if(checked)
+    {
+        mySettings2.backgroundType = B_PICTURE;
+        ui->groupBoxImageBackground2->setVisible(true);
+        ui->groupBoxVideoBackground2->setVisible(false);
+    }
+}
+
+void BibleSettingWidget::on_radioButtonBgVideo2_toggled(bool checked)
+{
+    if(checked)
+    {
+        mySettings2.backgroundType = B_VIDEO;
+        ui->groupBoxImageBackground2->setVisible(false);
+        ui->groupBoxVideoBackground2->setVisible(true);
+    }
+}
+
+void BibleSettingWidget::on_radioButtonBgNone3_toggled(bool checked)
+{
+    if(checked)
+    {
+        mySettings3.backgroundType = B_NONE;
+        ui->groupBoxImageBackground3->setVisible(false);
+        ui->groupBoxVideoBackground3->setVisible(false);
+    }
+}
+
+void BibleSettingWidget::on_radioButtonBgSolid3_toggled(bool checked)
+{
+    if(checked)
+    {
+        mySettings3.backgroundType = B_SOLID_COLOR;
+        ui->groupBoxImageBackground3->setVisible(false);
+        ui->groupBoxVideoBackground3->setVisible(false);
+    }
+}
+
+void BibleSettingWidget::on_radioButtonBgImage3_toggled(bool checked)
+{
+    if(checked)
+    {
+        mySettings3.backgroundType = B_PICTURE;
+        ui->groupBoxImageBackground3->setVisible(true);
+        ui->groupBoxVideoBackground3->setVisible(false);
+    }
+}
+
+void BibleSettingWidget::on_radioButtonBgVideo3_toggled(bool checked)
+{
+    if(checked)
+    {
+        mySettings3.backgroundType = B_VIDEO;
+        ui->groupBoxImageBackground3->setVisible(false);
+        ui->groupBoxVideoBackground3->setVisible(true);
+    }
+}
+
+void BibleSettingWidget::on_radioButtonBgNone4_toggled(bool checked)
+{
+    if(checked)
+    {
+        mySettings4.backgroundType = B_NONE;
+        ui->groupBoxImageBackground4->setVisible(false);
+        ui->groupBoxVideoBackground4->setVisible(false);
+    }
+}
+
+void BibleSettingWidget::on_radioButtonBgSolid4_toggled(bool checked)
+{
+    if(checked)
+    {
+        mySettings4.backgroundType = B_SOLID_COLOR;
+        ui->groupBoxImageBackground4->setVisible(false);
+        ui->groupBoxVideoBackground4->setVisible(false);
+    }
+}
+
+void BibleSettingWidget::on_radioButtonBgImage4_toggled(bool checked)
+{
+    if(checked)
+    {
+        mySettings4.backgroundType = B_PICTURE;
+        ui->groupBoxImageBackground4->setVisible(true);
+        ui->groupBoxVideoBackground4->setVisible(false);
+    }
+}
+
+void BibleSettingWidget::on_radioButtonBgVideo4_toggled(bool checked)
+{
+    if(checked)
+    {
+        mySettings4.backgroundType = B_VIDEO;
+        ui->groupBoxImageBackground4->setVisible(false);
+        ui->groupBoxVideoBackground4->setVisible(true);
+    }
+}
+
+void BibleSettingWidget::on_toolButtonBrowseVideo_clicked()
+{
+    QString filename = QFileDialog::getOpenFileName(this, tr("Select a video for background"),
+                                                    ".", getSupportedVideoFormats());
+    if(!filename.isNull())
+    {
+        mySettings.backgroundVideoPath = filename;
+        ui->lineEditVideoPath->setText(filename);
+        updateVideoPreview(1);
+    }
+}
+
+void BibleSettingWidget::on_toolButtonBrowseVideo2_clicked()
+{
+    QString filename = QFileDialog::getOpenFileName(this, tr("Select a video for background"),
+                                                    ".", getSupportedVideoFormats());
+    if(!filename.isNull())
+    {
+        mySettings2.backgroundVideoPath = filename;
+        ui->lineEditVideoPath2->setText(filename);
+        updateVideoPreview(2);
+    }
+}
+
+void BibleSettingWidget::on_toolButtonBrowseVideo3_clicked()
+{
+    QString filename = QFileDialog::getOpenFileName(this, tr("Select a video for background"),
+                                                    ".", getSupportedVideoFormats());
+    if(!filename.isNull())
+    {
+        mySettings3.backgroundVideoPath = filename;
+        ui->lineEditVideoPath3->setText(filename);
+        updateVideoPreview(3);
+    }
+}
+
+void BibleSettingWidget::on_toolButtonBrowseVideo4_clicked()
+{
+    QString filename = QFileDialog::getOpenFileName(this, tr("Select a video for background"),
+                                                    ".", getSupportedVideoFormats());
+    if(!filename.isNull())
+    {
+        mySettings4.backgroundVideoPath = filename;
+        ui->lineEditVideoPath4->setText(filename);
+        updateVideoPreview(4);
+    }
+}
+
+void BibleSettingWidget::updateVideoPreview(int display)
+{
+    QString videoPath;
+    QLabel *thumbnailLabel = nullptr;
+
+    switch(display)
+    {
+    case 1:
+        videoPath = mySettings.backgroundVideoPath;
+        thumbnailLabel = ui->labelVideoThumbnail;
+        break;
+    case 2:
+        videoPath = mySettings2.backgroundVideoPath;
+        thumbnailLabel = ui->labelVideoThumbnail2;
+        break;
+    case 3:
+        videoPath = mySettings3.backgroundVideoPath;
+        thumbnailLabel = ui->labelVideoThumbnail3;
+        break;
+    case 4:
+        videoPath = mySettings4.backgroundVideoPath;
+        thumbnailLabel = ui->labelVideoThumbnail4;
+        break;
+    }
+
+    if(!videoPath.isEmpty() && QFile::exists(videoPath))
+    {
+        QPixmap pix(videoPath);
+        if(!pix.isNull())
+        {
+            thumbnailLabel->setPixmap(pix.scaled(160, 90, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+            return;
+        }
+    }
+    thumbnailLabel->clear();
+    thumbnailLabel->setText(tr("No preview"));
+}
+
+void BibleSettingWidget::setBackgroundTypeRadio(int display, int type)
+{
+    switch(display)
+    {
+    case 1:
+        ui->radioButtonBgNone->setChecked(type == B_NONE);
+        ui->radioButtonBgSolid->setChecked(type == B_SOLID_COLOR);
+        ui->radioButtonBgImage->setChecked(type == B_PICTURE);
+        ui->radioButtonBgVideo->setChecked(type == B_VIDEO);
+        ui->groupBoxImageBackground->setVisible(type == B_PICTURE);
+        ui->groupBoxVideoBackground->setVisible(type == B_VIDEO);
+        break;
+    case 2:
+        ui->radioButtonBgNone2->setChecked(type == B_NONE);
+        ui->radioButtonBgSolid2->setChecked(type == B_SOLID_COLOR);
+        ui->radioButtonBgImage2->setChecked(type == B_PICTURE);
+        ui->radioButtonBgVideo2->setChecked(type == B_VIDEO);
+        ui->groupBoxImageBackground2->setVisible(type == B_PICTURE);
+        ui->groupBoxVideoBackground2->setVisible(type == B_VIDEO);
+        break;
+    case 3:
+        ui->radioButtonBgNone3->setChecked(type == B_NONE);
+        ui->radioButtonBgSolid3->setChecked(type == B_SOLID_COLOR);
+        ui->radioButtonBgImage3->setChecked(type == B_PICTURE);
+        ui->radioButtonBgVideo3->setChecked(type == B_VIDEO);
+        ui->groupBoxImageBackground3->setVisible(type == B_PICTURE);
+        ui->groupBoxVideoBackground3->setVisible(type == B_VIDEO);
+        break;
+    case 4:
+        ui->radioButtonBgNone4->setChecked(type == B_NONE);
+        ui->radioButtonBgSolid4->setChecked(type == B_SOLID_COLOR);
+        ui->radioButtonBgImage4->setChecked(type == B_PICTURE);
+        ui->radioButtonBgVideo4->setChecked(type == B_VIDEO);
+        ui->groupBoxImageBackground4->setVisible(type == B_PICTURE);
+        ui->groupBoxVideoBackground4->setVisible(type == B_VIDEO);
+        break;
+    }
 }

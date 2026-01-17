@@ -18,10 +18,16 @@
 ***************************************************************************/
 
 #include <QWidget>
+#include <QAction>
+#include <QMenu>
+#include <QMenuBar>
+#include <QLabel>
+#include <QStatusBar>
 #include "../headers/softprojector.hpp"
 #include "ui_softprojector.h"
 #include "../headers/aboutdialog.hpp"
 #include "../headers/editannouncementdialog.hpp"
+#include "../headers/virtualoutput.hpp"
 
 SoftProjector::SoftProjector(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::SoftProjectorClass)
@@ -59,6 +65,7 @@ SoftProjector::SoftProjector(QWidget *parent)
     pictureWidget = new PictureWidget;
     mediaPlayer = new MediaWidget;
     mediaControls = new MediaControl(this);
+    virtualOutput = nullptr;
 
     ui->setupUi(this);
 
@@ -155,6 +162,87 @@ SoftProjector::SoftProjector(QWidget *parent)
     ui->actionHide->setEnabled(false);
     ui->actionClear->setEnabled(false);
 
+    // Add Virtual Output menu item under View menu
+    QAction *actionVirtualOutput = new QAction(tr("Virtual Output"), this);
+    actionVirtualOutput->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_V));
+    actionVirtualOutput->setStatusTip(tr("Show Virtual Output window for streaming"));
+    connect(actionVirtualOutput, SIGNAL(triggered()), this, SLOT(toggleVirtualOutput()));
+
+    // Find or create View menu
+    QMenu *viewMenu = nullptr;
+    foreach(QMenu *menu, ui->menuBar->findChildren<QMenu*>())
+    {
+        if(menu->title() == tr("&View") || menu->title() == "View")
+        {
+            viewMenu = menu;
+            break;
+        }
+    }
+    if(!viewMenu)
+    {
+        viewMenu = ui->menuBar->addMenu(tr("&View"));
+    }
+    viewMenu->addAction(actionVirtualOutput);
+
+    // Initialize lower third control state
+    lowerThirdVisible = false;
+
+    // Create Stream toolbar with lower third controls
+    streamToolBar = new QToolBar(tr("Stream"), this);
+    streamToolBar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    addToolBar(streamToolBar);
+
+    // Lower third text input
+    QLabel *lowerThirdLabel = new QLabel(tr("Lower Third:"), this);
+    lowerThirdTextEdit = new QLineEdit(this);
+    lowerThirdTextEdit->setPlaceholderText(tr("Enter lower third text..."));
+    lowerThirdTextEdit->setMinimumWidth(200);
+    lowerThirdTextEdit->setMaximumWidth(400);
+
+    // Lower third buttons
+    lowerThirdShowButton = new QPushButton(tr("Show"), this);
+    lowerThirdHideButton = new QPushButton(tr("Hide"), this);
+    lowerThirdClearButton = new QPushButton(tr("Clear"), this);
+
+    // Add widgets to toolbar
+    streamToolBar->addWidget(lowerThirdLabel);
+    streamToolBar->addWidget(lowerThirdTextEdit);
+    streamToolBar->addSeparator();
+    streamToolBar->addAction(ui->actionShow);
+    streamToolBar->addAction(ui->actionHide);
+    streamToolBar->addSeparator();
+    streamToolBar->addWidget(lowerThirdShowButton);
+    streamToolBar->addWidget(lowerThirdHideButton);
+    streamToolBar->addWidget(lowerThirdClearButton);
+
+    // Connect lower third controls
+    connect(lowerThirdTextEdit, SIGNAL(textChanged(const QString&)),
+            this, SLOT(onLowerThirdTextChanged(QString)));
+    connect(lowerThirdShowButton, SIGNAL(clicked()), this, SLOT(showLowerThird()));
+    connect(lowerThirdHideButton, SIGNAL(clicked()), this, SLOT(hideLowerThird()));
+    connect(lowerThirdClearButton, SIGNAL(clicked()), this, SLOT(clearLowerThirdText()));
+
+    // Add lower third menu items under View menu
+    QAction *actionShowLowerThird = new QAction(tr("Show Lower Third"), this);
+    actionShowLowerThird->setShortcut(QKeySequence(Qt::Key_F9));
+    actionShowLowerThird->setStatusTip(tr("Show lower third overlay"));
+    connect(actionShowLowerThird, SIGNAL(triggered()), this, SLOT(showLowerThird()));
+
+    QAction *actionHideLowerThird = new QAction(tr("Hide Lower Third"), this);
+    actionHideLowerThird->setShortcut(QKeySequence(Qt::Key_F10));
+    actionHideLowerThird->setStatusTip(tr("Hide lower third overlay"));
+    connect(actionHideLowerThird, SIGNAL(triggered()), this, SLOT(hideLowerThird()));
+
+    QAction *actionToggleLowerThird = new QAction(tr("Toggle Lower Third"), this);
+    actionToggleLowerThird->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_L));
+    actionToggleLowerThird->setStatusTip(tr("Toggle lower third overlay visibility"));
+    connect(actionToggleLowerThird, SIGNAL(triggered()), this, SLOT(toggleLowerThird()));
+
+    viewMenu->addSeparator();
+    viewMenu->addAction(actionShowLowerThird);
+    viewMenu->addAction(actionHideLowerThird);
+    viewMenu->addAction(actionToggleLowerThird);
+
     // Create and connect shortcuts
     shpgUP = new QShortcut(Qt::Key_PageUp,this);
     shpgDwn = new QShortcut(Qt::Key_PageDown,this);
@@ -193,6 +281,7 @@ SoftProjector::SoftProjector(QWidget *parent)
 SoftProjector::~SoftProjector()
 {
     saveSettings();
+    delete virtualOutput;
     delete songWidget;
     delete editWidget;
     delete bibleWidget;
@@ -210,6 +299,8 @@ SoftProjector::~SoftProjector()
     delete shSart1;
     delete shSart2;
     delete helpDialog;
+    delete lowerThirdTextEdit;
+    delete streamToolBar;
     delete ui;
 }
 
@@ -245,8 +336,9 @@ void SoftProjector::positionDisplayWindow()
         }
 
         pds1->setCursor(Qt::BlankCursor); //Sets a Blank Mouse to the screen
+        pds1->setFormatSettings(mySettings.general.screenFormat[0]);
         pds1->resetImGenSize();
-        pds1->renderPassiveText(theme.passive.backgroundPix,theme.passive.useBackground);
+        pds1->renderPassiveText(theme.passive.backgroundPix,theme.passive.useBackground, theme.passive);
         pds1->setControlsVisible(false);
 
         if(mySettings.general.displayOnStartUp)
@@ -266,12 +358,13 @@ void SoftProjector::positionDisplayWindow()
             {
                 // Move the display widget to screen 1 (secondary screen):
                 pds2->setGeometry(QApplication::primaryScreen()->virtualSiblings().at(mySettings.general.displayScreen2)->geometry());
+                pds2->setFormatSettings(mySettings.general.screenFormat[1]);
                 pds2->resetImGenSize();
 
             }
 
             pds2->setCursor(Qt::BlankCursor); //Sets a Blank Mouse to the screen
-            pds2->renderPassiveText(theme.passive2.backgroundPix,theme.passive2.useBackground);
+            pds2->renderPassiveText(theme.passive2.backgroundPix,theme.passive2.useBackground, theme.passive2);
             pds2->setControlsVisible(false);
             if(mySettings.general.displayOnStartUp)
             {
@@ -292,11 +385,12 @@ void SoftProjector::positionDisplayWindow()
             {
                 // Move the display widget to screen 1 (tertiary screen):
                 pds3->setGeometry(QApplication::primaryScreen()->virtualSiblings().at(mySettings.general.displayScreen3)->geometry());
+                pds3->setFormatSettings(mySettings.general.screenFormat[2]);
                 pds3->resetImGenSize();
 
             }
             pds3->setCursor(Qt::BlankCursor); //Sets a Blank Mouse to the screen
-            pds3->renderPassiveText(theme.passive3.backgroundPix,theme.passive3.useBackground);
+            pds3->renderPassiveText(theme.passive3.backgroundPix,theme.passive3.useBackground, theme.passive3);
             pds3->setControlsVisible(false);
             if(mySettings.general.displayOnStartUp)
             {
@@ -317,11 +411,12 @@ void SoftProjector::positionDisplayWindow()
             {
                 // Move the display widget to screen 1 (quaternary screen):
                 pds4->setGeometry(QApplication::primaryScreen()->virtualSiblings().at(mySettings.general.displayScreen4)->geometry());
+                pds4->setFormatSettings(mySettings.general.screenFormat[3]);
                 pds4->resetImGenSize();
 
             }
             pds4->setCursor(Qt::BlankCursor); //Sets a Blank Mouse to the screen
-            pds4->renderPassiveText(theme.passive4.backgroundPix,theme.passive4.useBackground);
+            pds4->renderPassiveText(theme.passive4.backgroundPix,theme.passive4.useBackground, theme.passive4);
             pds4->setControlsVisible(false);
             if(mySettings.general.displayOnStartUp)
             {
@@ -343,6 +438,7 @@ void SoftProjector::positionDisplayWindow()
         // Will be shown only when items were sent to the projector.
         qDebug()<< "Setting Primary screen";
         pds1->setGeometry(QApplication::primaryScreen()->virtualSiblings().at(0)->geometry());
+        pds1->setFormatSettings(mySettings.general.screenFormat[0]);
         pds1->resetImGenSize();
         showDisplayScreen(false);
         isSingleScreen = true;
@@ -364,10 +460,119 @@ void SoftProjector::showDisplayScreen(bool show)
     {
         pds1->hide();
         QPixmap p;
-        pds1->renderPassiveText(p,false);
+        pds1->renderPassiveText(p,false, theme.passive);
         ui->actionCloseDisplay->setEnabled(false);
     }
 
+}
+
+void SoftProjector::setupVirtualOutput()
+{
+    if(virtualOutput)
+        return;
+
+    virtualOutput = new VirtualOutput(this);
+
+    virtualOutput->setTheme(true, -1);
+
+    qDebug() << "Virtual Output initialized";
+}
+
+void SoftProjector::toggleVirtualOutput()
+{
+    if(!virtualOutput)
+    {
+        setupVirtualOutput();
+        virtualOutput->setEnabled(true);
+    }
+    else
+    {
+        if(virtualOutput->isEnabled())
+        {
+            virtualOutput->setEnabled(false);
+        }
+        else
+        {
+            virtualOutput->setEnabled(true);
+        }
+    }
+}
+
+void SoftProjector::updateVirtualOutputSettings()
+{
+    if(!virtualOutput)
+        return;
+
+    virtualOutput->setEnabled(mySettings.general.virtualOutput.enabled);
+
+    if(mySettings.general.virtualOutput.width == 1280 && mySettings.general.virtualOutput.height == 720)
+        virtualOutput->setResolution(VirtualOutput::RES_720P);
+    else if(mySettings.general.virtualOutput.width == 1920 && mySettings.general.virtualOutput.height == 1080)
+        virtualOutput->setResolution(VirtualOutput::RES_1080P);
+    else if(mySettings.general.virtualOutput.width == 2560 && mySettings.general.virtualOutput.height == 1440)
+        virtualOutput->setResolution(VirtualOutput::RES_1440P);
+    else
+        virtualOutput->setCustomResolution(mySettings.general.virtualOutput.width,
+                                           mySettings.general.virtualOutput.height);
+
+    virtualOutput->setTheme(mySettings.general.virtualOutput.mirrorDisplay1,
+                           mySettings.general.virtualOutput.streamThemeId);
+}
+
+void SoftProjector::showLowerThird()
+{
+    QString text = lowerThirdTextEdit->text();
+    if(virtualOutput && virtualOutput->isEnabled())
+    {
+        virtualOutput->showLowerThird(text);
+        lowerThirdVisible = true;
+        statusBar()->showMessage(tr("Lower third shown"), 2000);
+    }
+    else
+    {
+        statusBar()->showMessage(tr("Virtual Output must be enabled to show lower third"), 3000);
+    }
+}
+
+void SoftProjector::hideLowerThird()
+{
+    if(virtualOutput && virtualOutput->isEnabled())
+    {
+        virtualOutput->hideLowerThird();
+        lowerThirdVisible = false;
+        statusBar()->showMessage(tr("Lower third hidden"), 2000);
+    }
+}
+
+void SoftProjector::toggleLowerThird()
+{
+    if(lowerThirdVisible)
+    {
+        hideLowerThird();
+    }
+    else
+    {
+        showLowerThird();
+    }
+}
+
+void SoftProjector::onLowerThirdTextChanged(const QString &text)
+{
+    if(virtualOutput && virtualOutput->isEnabled() && lowerThirdVisible)
+    {
+        virtualOutput->showLowerThird(text);
+    }
+}
+
+void SoftProjector::clearLowerThirdText()
+{
+    lowerThirdTextEdit->clear();
+    if(virtualOutput && virtualOutput->isEnabled() && lowerThirdVisible)
+    {
+        virtualOutput->hideLowerThird();
+        lowerThirdVisible = false;
+    }
+    statusBar()->showMessage(tr("Lower third text cleared"), 2000);
 }
 
 void SoftProjector::saveSettings()
@@ -404,6 +609,15 @@ void SoftProjector::updateSetting(GeneralSettings &g, Theme &t, SlideShowSetting
                                   BibleVersionSettings &bsets, BibleVersionSettings &bsets2,
                                   BibleVersionSettings &bsets3, BibleVersionSettings &bsets4)
 {
+    bool formatChanged = (mySettings.general.screenFormat[0].aspectRatio != g.screenFormat[0].aspectRatio ||
+                          mySettings.general.screenFormat[1].aspectRatio != g.screenFormat[1].aspectRatio ||
+                          mySettings.general.screenFormat[2].aspectRatio != g.screenFormat[2].aspectRatio ||
+                          mySettings.general.screenFormat[3].aspectRatio != g.screenFormat[3].aspectRatio ||
+                          mySettings.general.screenFormat[0].customWidth != g.screenFormat[0].customWidth ||
+                          mySettings.general.screenFormat[0].customHeight != g.screenFormat[0].customHeight ||
+                          mySettings.general.screenFormat[0].maintainAspect != g.screenFormat[0].maintainAspect ||
+                          mySettings.general.screenFormat[0].cropToFit != g.screenFormat[0].cropToFit);
+
     mySettings.general = g;
     mySettings.slideSets = ssets;
     mySettings.bibleSets = bsets;
@@ -419,6 +633,15 @@ void SoftProjector::updateSetting(GeneralSettings &g, Theme &t, SlideShowSetting
     theme.bible2.versions = mySettings.bibleSets2;
     theme.bible3.versions = mySettings.bibleSets3;
     theme.bible4.versions = mySettings.bibleSets4;
+
+    if(formatChanged)
+    {
+        pds1->setFormatSettings(mySettings.general.screenFormat[0]);
+        pds2->setFormatSettings(mySettings.general.screenFormat[1]);
+        pds3->setFormatSettings(mySettings.general.screenFormat[2]);
+        pds4->setFormatSettings(mySettings.general.screenFormat[3]);
+        positionDisplayWindow();
+    }
 }
 
 void SoftProjector::applySetting(GeneralSettings &g, Theme &t, SlideShowSettings &s,
@@ -776,7 +999,7 @@ void SoftProjector::updateScreen()
     if(!showing)
     {
         // Do not display any text:
-        pds1->renderPassiveText(theme.passive.backgroundPix,theme.passive.useBackground);
+        pds1->renderPassiveText(theme.passive.backgroundPix,theme.passive.useBackground, theme.passive);
 
         if(isSingleScreen)
             showDisplayScreen(false);
@@ -785,12 +1008,44 @@ void SoftProjector::updateScreen()
         {
             if(!theme.passive2.useDisp1settings)
             {
-                pds2->renderPassiveText(theme.passive2.backgroundPix,theme.passive2.useBackground);
+                pds2->renderPassiveText(theme.passive2.backgroundPix,theme.passive2.useBackground, theme.passive2);
             }
             else
             {
-                pds2->renderPassiveText(theme.passive.backgroundPix,theme.passive.useBackground);
+                pds2->renderPassiveText(theme.passive.backgroundPix,theme.passive.useBackground, theme.passive);
             }
+        }
+            else
+            {
+                pds2->renderPassiveText(theme.passive.backgroundPix,theme.passive.useBackground, theme.passive);
+            }
+
+        }
+
+        if(hasDisplayScreen3)
+        {
+            if(!theme.passive3.useDisp1settings)
+            {
+                pds3->renderPassiveText(theme.passive3.backgroundPix,theme.passive3.useBackground, theme.passive3);
+            }
+            else
+            {
+                pds3->renderPassiveText(theme.passive.backgroundPix,theme.passive.useBackground, theme.passive);
+            }
+
+        }
+
+        if(hasDisplayScreen4)
+        {
+            if(!theme.passive4.useDisp1settings)
+            {
+                pds4->renderPassiveText(theme.passive4.backgroundPix,theme.passive4.useBackground, theme.passive4);
+            }
+            else
+            {
+                pds4->renderPassiveText(theme.passive.backgroundPix,theme.passive.useBackground, theme.passive);
+            }
+        }
 
         }
 
@@ -819,6 +1074,13 @@ void SoftProjector::updateScreen()
             }
 
         }
+
+        // Update virtual output if enabled
+        if(virtualOutput && virtualOutput->isEnabled())
+        {
+            virtualOutput->renderPassiveText(theme.passive.backgroundPix,theme.passive.useBackground, theme.passive);
+        }
+
            stopVideo();
         ui->actionShow->setEnabled(true);
         ui->actionHide->setEnabled(false);
@@ -936,6 +1198,14 @@ void SoftProjector::showBible()
                                                             mySettings.bibleSets),theme.bible);
         }
     }
+
+    // Update virtual output if enabled
+    if(virtualOutput && virtualOutput->isEnabled())
+    {
+        virtualOutput->renderBibleText(bibleWidget->bible.getCurrentVerseAndCaption(
+                                           currentRows,theme.bible,mySettings.bibleSets),
+                                       theme.bible);
+    }
 }
 
 void SoftProjector::showSong(int currentRow)
@@ -990,6 +1260,12 @@ void SoftProjector::showSong(int currentRow)
         }
     }
 
+    // Update virtual output if enabled
+    if(virtualOutput && virtualOutput->isEnabled())
+    {
+        virtualOutput->renderSongText(current_song.getStanza(currentRow),s1);
+    }
+
 }
 
 void SoftProjector::showAnnounce(int currentRow)
@@ -1028,6 +1304,12 @@ void SoftProjector::showAnnounce(int currentRow)
             pds4->renderAnnounceText(currentAnnounce.getAnnounceSlide(currentRow),theme.announce);
         }
     }
+
+    // Update virtual output if enabled
+    if(virtualOutput && virtualOutput->isEnabled())
+    {
+        virtualOutput->renderAnnounceText(currentAnnounce.getAnnounceSlide(currentRow),theme.announce);
+    }
 }
 
 void SoftProjector::showPicture(int currentRow)
@@ -1044,6 +1326,12 @@ void SoftProjector::showPicture(int currentRow)
     if(hasDisplayScreen4)
     {
         pds4->renderSlideShow(pictureShowList.at(currentRow).image,mySettings.slideSets);
+    }
+
+    // Update virtual output if enabled
+    if(virtualOutput && virtualOutput->isEnabled())
+    {
+        virtualOutput->renderSlideShow(pictureShowList.at(currentRow).image,mySettings.slideSets);
     }
 }
 
@@ -1069,6 +1357,14 @@ void SoftProjector::showVideo()
         pds4->setVideoMuted(true);
         pds4->renderVideo(currentVideo);
     }
+
+    // Update virtual output if enabled
+    if(virtualOutput && virtualOutput->isEnabled())
+    {
+        virtualOutput->renderVideo(currentVideo);
+        virtualOutput->setVideoVolume(100);
+        virtualOutput->setVideoMuted(false);
+    }
 }
 
 void SoftProjector::on_actionShow_triggered()
@@ -1085,18 +1381,27 @@ void SoftProjector::on_actionHide_triggered()
 
 void SoftProjector::on_actionClear_triggered()
 {
+    pds1->stopBackgroundVideo();
     pds1->renderNotText();
     if(hasDisplayScreen2)
     {
+        pds2->stopBackgroundVideo();
         pds2->renderNotText();
     }
     if(hasDisplayScreen3)
     {
+        pds3->stopBackgroundVideo();
         pds3->renderNotText();
     }
     if(hasDisplayScreen4)
     {
+        pds4->stopBackgroundVideo();
         pds4->renderNotText();
+    }
+    if(virtualOutput && virtualOutput->isEnabled())
+    {
+        virtualOutput->stopBackgroundVideo();
+        virtualOutput->renderNotText();
     }
     ui->actionClear->setEnabled(false);
     ui->actionShow->setEnabled(true);

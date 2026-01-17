@@ -18,83 +18,64 @@
 ***************************************************************************/
 
 #include "../headers/theme.hpp"
-/*
-PassiveSettings::PassiveSettings()
+#include <QSqlQuery>
+#include <QSqlError>
+#include <QDebug>
+#include <QFile>
+
+void migrateThemeTablesForVideoBackgrounds()
 {
-    useBackground = false;
-    backgroundName = "";
-    backgroundPix = QPixmap();
-    useDisp1settings = false;
+    QSqlQuery sq;
+    QStringList tables = {"ThemeBible", "ThemeSong", "ThemeAnnounce", "ThemePassive"};
+    bool migration_failed = false;
+
+    for (const QString &tableName : tables) {
+        qDebug() << "Migrating" << tableName << "for video backgrounds...";
+
+        sq.exec(QString("PRAGMA table_info(%1)").arg(tableName));
+        QSet<QString> existingColumns;
+        while (sq.next()) {
+            existingColumns.insert(sq.value("name").toString());
+        }
+
+        if (!existingColumns.contains("background_video_path")) {
+            QString alterPath = QString("ALTER TABLE %1 ADD COLUMN background_video_path TEXT").arg(tableName);
+            if (!sq.exec(alterPath)) {
+                qWarning() << "Failed to add background_video_path to" << tableName << ":" << sq.lastError().text();
+                migration_failed = true;
+            } else {
+                qDebug() << "Added background_video_path to" << tableName;
+            }
+        }
+
+        if (!existingColumns.contains("background_video_loop")) {
+            QString alterLoop = QString("ALTER TABLE %1 ADD COLUMN background_video_loop INTEGER DEFAULT 1").arg(tableName);
+            if (!sq.exec(alterLoop)) {
+                qWarning() << "Failed to add background_video_loop to" << tableName << ":" << sq.lastError().text();
+                migration_failed = true;
+            } else {
+                qDebug() << "Added background_video_loop to" << tableName;
+            }
+        }
+
+        if (!existingColumns.contains("background_video_fill_mode")) {
+            QString alterFillMode = QString("ALTER TABLE %1 ADD COLUMN background_video_fill_mode INTEGER DEFAULT 0").arg(tableName);
+            if (!sq.exec(alterFillMode)) {
+                qWarning() << "Failed to add background_video_fill_mode to" << tableName << ":" << sq.lastError().text();
+                migration_failed = true;
+            } else {
+                qDebug() << "Added background_video_fill_mode to" << tableName;
+            }
+        }
+    }
+
+    if (migration_failed) {
+        qWarning() << "Some migration operations failed for video background columns";
+    } else {
+        qDebug() << "Video background migration completed successfully";
+    }
 }
 
-BibleSettings::BibleSettings()
-{
-    // Apply Bible Defaults
-    useShadow = true;
-    useFading = true;
-    useBlurShadow = false;
-    useBackground = false;
-    backgroundName = "";
-    backgroundPix = QPixmap();
-    textFont.fromString("Arial,48,-1,5,50,0,0,0,0,0");
-    textColor = QColor(Qt::white);
-    textAlignmentV = 0;
-    textAlignmentH = 0;
-    captionFont.fromString("Arial,36,-1,5,50,0,0,0,0,0");
-    captionColor = QColor(Qt::white);
-    captionAlignment = 2;
-    captionPosition = 1;
-    useAbbriviation = false;
-    screenUse = 100;
-    screenPosition = 1;
-    useDisp1settings = false;
-}
-
-SongSettings::SongSettings()
-{
-    // Apply song defaults
-    useShadow = true;
-    useFading = true;
-    useBlurShadow = false;
-    showStanzaTitle = false;
-    showSongKey = false;
-    showSongNumber = false;
-    infoColor = QColor(Qt::white);
-    infoFont.fromString("Arial,36,-1,5,50,0,0,0,0,0");
-    infoAling = 0;
-    showSongEnding = true;
-    endingColor = QColor(Qt::white);
-    endingFont.fromString("Arial,48,-1,5,50,0,0,0,0,0");
-    endingType = 0;
-    endingPosition = 1;
-    useBackground = false;
-    backgroundName = "";
-    backgroundPix = QPixmap();
-    textColor = QColor(Qt::white);
-    textFont.fromString("Arial,48,-1,5,50,0,0,0,0,0");
-    textAlignmentV = 1;
-    textAlignmentH = 1;
-    screenUse = 100;
-    screenPositon = 1;
-    useDisp1settings = false;
-}
-
-AnnounceSettings::AnnounceSettings()
-{
-    // Apply annouce defaults
-    useShadow = true;
-    useFading = true;
-    useBlurShadow = false;
-    useBackground = false;
-    backgroundName = "";
-    backgroundPix = QPixmap();
-    textFont.fromString("Arial,48,-1,5,50,0,0,0,0,0");
-    textColor = QColor(Qt::white);
-    textAlignmentV = 0;
-    textAlignmentH = 1;
-    useDisp1settings = false;
-}
-*/
 ThemeInfo::ThemeInfo()
 {
     themeId = 0;
@@ -139,14 +120,18 @@ void Theme::saveThemeNew()
 void Theme::savePassiveNew(int screen, TextSettings &settings)
 {
     QSqlQuery sq;
-    sq.prepare("INSERT INTO ThemePassive (theme_id, disp, use_background, background_name, background, use_disp_1) "
-               "VALUES(?,?,?,?,?,?)");
+    sq.prepare("INSERT INTO ThemePassive (theme_id, disp, use_background, background_name, background, use_disp_1, "
+               "background_video_path, background_video_loop, background_video_fill_mode) "
+               "VALUES(?,?,?,?,?,?,?,?,?)");
     sq.addBindValue(m_info.themeId);
     sq.addBindValue(screen);
     sq.addBindValue(settings.useBackground);
     sq.addBindValue(settings.backgroundName);
     sq.addBindValue(pixToByte(settings.backgroundPix));
     sq.addBindValue(settings.useDisp1settings);
+    sq.addBindValue(settings.backgroundVideoPath);
+    sq.addBindValue(settings.backgroundVideoLoop);
+    sq.addBindValue(settings.backgroundVideoFillMode);
     sq.exec();
 }
 
@@ -156,8 +141,9 @@ void Theme::saveBibleNew(int screen, BibleSettings &settings)
     sq.prepare("INSERT INTO ThemeBible (theme_id, disp, use_shadow, use_fading, use_blur_shadow, use_background, "
                "background_name, background, text_font, text_color, text_align_v, text_align_h, caption_font, "
                "caption_color, caption_align, caption_position, use_abbr, screen_use, screen_position, use_disp_1, "
-               "add_background_color_to_text, text_rec_background_color, text_gen_background_color) "
-               "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+               "add_background_color_to_text, text_rec_background_color, text_gen_background_color, "
+               "background_video_path, background_video_loop, background_video_fill_mode) "
+               "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
     sq.addBindValue(m_info.themeId);
     sq.addBindValue(screen);
     sq.addBindValue(settings.useShadow);
@@ -181,6 +167,9 @@ void Theme::saveBibleNew(int screen, BibleSettings &settings)
     sq.addBindValue(settings.bibleAddBKColorToText);
     sq.addBindValue((unsigned int)(settings.bibleTextRecBKColor.rgb()));
     sq.addBindValue((unsigned int)(settings.bibleTextGenBKColor.rgb()));
+    sq.addBindValue(settings.backgroundVideoPath);
+    sq.addBindValue(settings.backgroundVideoLoop);
+    sq.addBindValue(settings.backgroundVideoFillMode);
     sq.exec();
 }
 
@@ -191,8 +180,9 @@ void Theme::saveSongNew(int screen, SongSettings &settings)
                "show_key, show_number, info_color, info_font, info_align, show_song_ending, ending_color, ending_font, "
                "ending_type, ending_position, use_background, background_name, background, text_font, text_color, "
                "text_align_v, text_align_h, screen_use, screen_position, use_disp_1, "
-               "add_background_color_to_text, text_rec_background_color, text_gen_background_color) "
-               "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+               "add_background_color_to_text, text_rec_background_color, text_gen_background_color, "
+               "background_video_path, background_video_loop, background_video_fill_mode) "
+               "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
     sq.addBindValue(m_info.themeId);
     sq.addBindValue(screen);
     sq.addBindValue(settings.useShadow);
@@ -222,6 +212,9 @@ void Theme::saveSongNew(int screen, SongSettings &settings)
     sq.addBindValue(settings.songAddBKColorToText);
     sq.addBindValue((unsigned int)(settings.songTextRecBKColor.rgb()));
     sq.addBindValue((unsigned int)(settings.songTextGenBKColor.rgb()));
+    sq.addBindValue(settings.backgroundVideoPath);
+    sq.addBindValue(settings.backgroundVideoLoop);
+    sq.addBindValue(settings.backgroundVideoFillMode);
     sq.exec();
 }
 
@@ -229,8 +222,9 @@ void Theme::saveAnnounceNew(int screen, TextSettings &settings)
 {
     QSqlQuery sq;
     sq.prepare("INSERT INTO ThemeAnnounce (theme_id, disp, use_shadow, use_fading, use_blur_shadow, use_background, "
-               "background_name, background, text_font, text_color, text_align_v, text_align_h, use_disp_1) "
-               "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)");
+               "background_name, background, text_font, text_color, text_align_v, text_align_h, use_disp_1, "
+               "background_video_path, background_video_loop, background_video_fill_mode) "
+               "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
     sq.addBindValue(m_info.themeId);
     sq.addBindValue(screen);
     sq.addBindValue(settings.useShadow);
@@ -244,6 +238,9 @@ void Theme::saveAnnounceNew(int screen, TextSettings &settings)
     sq.addBindValue(settings.textAlignmentV);
     sq.addBindValue(settings.textAlignmentH);
     sq.addBindValue(settings.useDisp1settings);
+    sq.addBindValue(settings.backgroundVideoPath);
+    sq.addBindValue(settings.backgroundVideoLoop);
+    sq.addBindValue(settings.backgroundVideoFillMode);
     sq.exec();
 }
 
@@ -277,12 +274,16 @@ void Theme::saveThemeUpdate()
 void Theme::savePassiveUpdate(int screen, TextSettings &settings)
 {
     QSqlQuery sq;
-    sq.prepare("UPDATE ThemePassive SET use_background = ?, background_name = ?, background = ?, use_disp_1 = ? "
+    sq.prepare("UPDATE ThemePassive SET use_background = ?, background_name = ?, background = ?, use_disp_1 = ?, "
+               "background_video_path = ?, background_video_loop = ?, background_video_fill_mode = ? "
                "WHERE theme_id = ? AND disp = ?");
     sq.addBindValue(settings.useBackground);
     sq.addBindValue(settings.backgroundName);
     sq.addBindValue(pixToByte(settings.backgroundPix));
     sq.addBindValue(settings.useDisp1settings);
+    sq.addBindValue(settings.backgroundVideoPath);
+    sq.addBindValue(settings.backgroundVideoLoop);
+    sq.addBindValue(settings.backgroundVideoFillMode);
     sq.addBindValue(m_info.themeId);
     sq.addBindValue(screen);
     sq.exec();
@@ -296,7 +297,8 @@ void Theme::saveBibleUpdate(int screen, BibleSettings &settings)
                "use_background = ?, background_name = ?, background = ?, text_font = ?, text_color = ?, text_align_v = ?, "
                "text_align_h = ?, caption_font = ?, caption_color = ?, caption_align = ?, caption_position = ?, "
                "use_abbr = ?, screen_use = ?, screen_position = ?, use_disp_1 = ?, "
-               "add_background_color_to_text = ?, text_rec_background_color = ?, text_gen_background_color = ? "
+               "add_background_color_to_text = ?, text_rec_background_color = ?, text_gen_background_color = ?, "
+               "background_video_path = ?, background_video_loop = ?, background_video_fill_mode = ? "
                "WHERE theme_id = ? AND disp = ?");
     sq.addBindValue(settings.useShadow);
     sq.addBindValue(settings.useFading);
@@ -319,6 +321,9 @@ void Theme::saveBibleUpdate(int screen, BibleSettings &settings)
     sq.addBindValue(settings.bibleAddBKColorToText);
     sq.addBindValue((unsigned int)(settings.bibleTextRecBKColor.rgb()));
     sq.addBindValue((unsigned int)(settings.bibleTextGenBKColor.rgb()));
+    sq.addBindValue(settings.backgroundVideoPath);
+    sq.addBindValue(settings.backgroundVideoLoop);
+    sq.addBindValue(settings.backgroundVideoFillMode);
     sq.addBindValue(m_info.themeId);
     sq.addBindValue(screen);
     sq.exec();
@@ -332,7 +337,8 @@ void Theme::saveSongUpdate(int screen, SongSettings &settings)
                "show_song_ending = ?, ending_color = ?, ending_font = ?, ending_type = ?, ending_position = ?, "
                "use_background = ?, background_name = ?, background = ?, text_font = ?, text_color = ?, text_align_v = ?, "
                "text_align_h = ?, screen_use = ?, screen_position = ?, use_disp_1 = ?, "
-               "add_background_color_to_text = ?, text_rec_background_color = ?, text_gen_background_color = ? "
+               "add_background_color_to_text = ?, text_rec_background_color = ?, text_gen_background_color = ?, "
+               "background_video_path = ?, background_video_loop = ?, background_video_fill_mode = ? "
                "WHERE theme_id = ? AND disp = ?");
     sq.addBindValue(settings.useShadow);
     sq.addBindValue(settings.useFading);
@@ -357,10 +363,13 @@ void Theme::saveSongUpdate(int screen, SongSettings &settings)
     sq.addBindValue(settings.textAlignmentH);
     sq.addBindValue(settings.screenUse);
     sq.addBindValue(settings.screenPosition);
-    sq.addBindValue(settings.useDisp1settings);    
+    sq.addBindValue(settings.useDisp1settings);
     sq.addBindValue(settings.songAddBKColorToText);
     sq.addBindValue((unsigned int)(settings.songTextRecBKColor.rgb()));
     sq.addBindValue((unsigned int)(settings.songTextGenBKColor.rgb()));
+    sq.addBindValue(settings.backgroundVideoPath);
+    sq.addBindValue(settings.backgroundVideoLoop);
+    sq.addBindValue(settings.backgroundVideoFillMode);
     sq.addBindValue(m_info.themeId);
     sq.addBindValue(screen);
     sq.exec();
@@ -371,7 +380,8 @@ void Theme::saveAnnounceUpdate(int screen, TextSettings &settings)
     QSqlQuery sq;
     sq.prepare("UPDATE ThemeAnnounce SET use_shadow = ?, use_fading = ?, use_blur_shadow = ?, "
                "use_background = ?, background_name = ?, background = ?, text_font = ?, text_color = ?, "
-               "text_align_v = ?, text_align_h = ?, use_disp_1 = ? "
+               "text_align_v = ?, text_align_h = ?, use_disp_1 = ?, "
+               "background_video_path = ?, background_video_loop = ?, background_video_fill_mode = ? "
                "WHERE theme_id = ? AND disp = ?");
     sq.addBindValue(settings.useShadow);
     sq.addBindValue(settings.useFading);
@@ -384,6 +394,9 @@ void Theme::saveAnnounceUpdate(int screen, TextSettings &settings)
     sq.addBindValue(settings.textAlignmentV);
     sq.addBindValue(settings.textAlignmentH);
     sq.addBindValue(settings.useDisp1settings);
+    sq.addBindValue(settings.backgroundVideoPath);
+    sq.addBindValue(settings.backgroundVideoLoop);
+    sq.addBindValue(settings.backgroundVideoFillMode);
     sq.addBindValue(m_info.themeId);
     sq.addBindValue(screen);
     sq.exec();
@@ -451,6 +464,20 @@ void Theme::loadPassive(int screen, TextSettings &settings)
     settings.backgroundName = sr.field("background_name").value().toString();
     settings.backgroundPix.loadFromData(sr.field("background").value().toByteArray());
     settings.useDisp1settings = sr.field("use_disp_1").value().toBool();
+
+    QString videoPath = sr.field("background_video_path").value().toString();
+    if (!videoPath.isEmpty() && QFile::exists(videoPath)) {
+        settings.backgroundVideoPath = videoPath;
+        settings.backgroundVideoLoop = sr.field("background_video_loop").value().toBool();
+        settings.backgroundVideoFillMode = sr.field("background_video_fill_mode").value().toInt();
+    } else {
+        if (!videoPath.isEmpty()) {
+            qWarning() << "Video background file not found:" << videoPath << "for ThemePassive screen" << screen;
+        }
+        settings.backgroundVideoPath.clear();
+        settings.backgroundVideoLoop = true;
+        settings.backgroundVideoFillMode = 0;
+    }
 }
 
 void Theme::loadBible(int screen, BibleSettings &settings)
@@ -481,6 +508,20 @@ void Theme::loadBible(int screen, BibleSettings &settings)
     settings.bibleAddBKColorToText = sr.field("add_background_color_to_text").value().toBool();
     settings.bibleTextRecBKColor = QColor::fromRgb(sr.field("text_rec_background_color").value().toUInt());
     settings.bibleTextGenBKColor = QColor::fromRgb(sr.field("text_gen_background_color").value().toUInt());
+
+    QString videoPath = sr.field("background_video_path").value().toString();
+    if (!videoPath.isEmpty() && QFile::exists(videoPath)) {
+        settings.backgroundVideoPath = videoPath;
+        settings.backgroundVideoLoop = sr.field("background_video_loop").value().toBool();
+        settings.backgroundVideoFillMode = sr.field("background_video_fill_mode").value().toInt();
+    } else {
+        if (!videoPath.isEmpty()) {
+            qWarning() << "Video background file not found:" << videoPath << "for ThemeBible screen" << screen;
+        }
+        settings.backgroundVideoPath.clear();
+        settings.backgroundVideoLoop = true;
+        settings.backgroundVideoFillMode = 0;
+    }
 }
 
 void Theme::loadSong(int screen, SongSettings &settings)
@@ -517,6 +558,20 @@ void Theme::loadSong(int screen, SongSettings &settings)
     settings.songAddBKColorToText = sr.field("add_background_color_to_text").value().toBool();
     settings.songTextRecBKColor = QColor::fromRgb(sr.field("text_rec_background_color").value().toUInt());
     settings.songTextGenBKColor = QColor::fromRgb(sr.field("text_gen_background_color").value().toUInt());
+
+    QString videoPath = sr.field("background_video_path").value().toString();
+    if (!videoPath.isEmpty() && QFile::exists(videoPath)) {
+        settings.backgroundVideoPath = videoPath;
+        settings.backgroundVideoLoop = sr.field("background_video_loop").value().toBool();
+        settings.backgroundVideoFillMode = sr.field("background_video_fill_mode").value().toInt();
+    } else {
+        if (!videoPath.isEmpty()) {
+            qWarning() << "Video background file not found:" << videoPath << "for ThemeSong screen" << screen;
+        }
+        settings.backgroundVideoPath.clear();
+        settings.backgroundVideoLoop = true;
+        settings.backgroundVideoFillMode = 0;
+    }
 }
 
 void Theme::loadAnnounce(int screen, TextSettings &settings)
@@ -537,6 +592,20 @@ void Theme::loadAnnounce(int screen, TextSettings &settings)
     settings.textAlignmentV = sr.field("text_align_v").value().toInt();
     settings.textAlignmentH = sr.field("text_align_h").value().toInt();
     settings.useDisp1settings = sr.field("use_disp_1").value().toBool();
+
+    QString videoPath = sr.field("background_video_path").value().toString();
+    if (!videoPath.isEmpty() && QFile::exists(videoPath)) {
+        settings.backgroundVideoPath = videoPath;
+        settings.backgroundVideoLoop = sr.field("background_video_loop").value().toBool();
+        settings.backgroundVideoFillMode = sr.field("background_video_fill_mode").value().toInt();
+    } else {
+        if (!videoPath.isEmpty()) {
+            qWarning() << "Video background file not found:" << videoPath << "for ThemeAnnounce screen" << screen;
+        }
+        settings.backgroundVideoPath.clear();
+        settings.backgroundVideoLoop = true;
+        settings.backgroundVideoFillMode = 0;
+    }
 }
 
 void Theme::setThemeInfo(ThemeInfo info)

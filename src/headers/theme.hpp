@@ -20,10 +20,16 @@
 #ifndef THEME_HPP
 #define THEME_HPP
 
-//#include <QtCore>
+#include <QtCore>
 #include <QtSql>
-//#include "spfunctions.hpp"
 #include "settings.hpp"
+
+enum BackgroundFillMode
+{
+    FILL_MODE_STRETCH,
+    FILL_MODE_FIT,
+    FILL_MODE_FILL
+};
 /*
 class PassiveSettings
 {

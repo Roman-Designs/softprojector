@@ -341,37 +341,214 @@
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="groupBoxSongBackground">
+    <widget class="QGroupBox" name="groupBoxBackground">
      <property name="title">
-      <string>Use Background Image</string>
+      <string>Background</string>
      </property>
-     <property name="checkable">
-      <bool>true</bool>
-     </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <layout class="QVBoxLayout" name="verticalLayoutBackground">
       <item>
-       <widget class="QLineEdit" name="lineEditSongBackground">
-        <property name="readOnly">
-         <bool>true</bool>
+       <layout class="QHBoxLayout" name="horizontalLayoutBackgroundType">
+        <item>
+         <widget class="QRadioButton" name="radioButtonBgNone">
+          <property name="text">
+           <string>None</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QRadioButton" name="radioButtonBgSolid">
+          <property name="text">
+           <string>Solid Color</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QRadioButton" name="radioButtonBgImage">
+          <property name="text">
+           <string>Image</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QRadioButton" name="radioButtonBgVideo">
+          <property name="text">
+           <string>Video</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="groupBoxImageBackground">
+        <property name="title">
+         <string>Image Background</string>
         </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <item>
+          <widget class="QLineEdit" name="lineEditSongBackground">
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="buttonSongBackground">
+           <property name="text">
+            <string>Browse...</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButtonApplyToAll">
+           <property name="toolTip">
+            <string>Apply this background to all active backgrounds.</string>
+           </property>
+           <property name="icon">
+            <iconset resource="softprojector.qrc">
+             <normaloff>:/icons/icons/common.png</normaloff>:/icons/icons/common.png</iconset>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="buttonSongBackground">
-        <property name="text">
-         <string>Browse...</string>
+       <widget class="QGroupBox" name="groupBoxVideoBackground">
+        <property name="title">
+         <string>Video Background</string>
         </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="pushButtonApplyToAll">
-        <property name="toolTip">
-         <string>Apply this background to all active backgrounds.</string>
-        </property>
-        <property name="icon">
-         <iconset resource="softprojector.qrc">
-          <normaloff>:/icons/icons/common.png</normaloff>:/icons/icons/common.png</iconset>
-        </property>
+        <layout class="QVBoxLayout" name="verticalLayoutVideoBackground">
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayoutVideoPath">
+           <item>
+            <widget class="QLabel" name="labelVideoPath">
+             <property name="text">
+              <string>Video File:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="lineEditVideoPath">
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QToolButton" name="toolButtonBrowseVideo">
+             <property name="text">
+              <string>...</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayoutVideoOptions">
+           <item>
+            <widget class="QCheckBox" name="checkBoxVideoLoop">
+             <property name="text">
+              <string>Loop video</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="labelVideoFillMode">
+             <property name="text">
+              <string>Fill Mode:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QComboBox" name="comboBoxVideoFillMode">
+             <item>
+              <property name="text">
+               <string>Stretch</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Fit</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Fill</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacerVideo">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayoutVideoPreview">
+           <item>
+            <widget class="QLabel" name="labelVideoPreview">
+             <property name="text">
+              <string>Preview:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="labelVideoThumbnail">
+             <property name="minimumSize">
+              <size>
+               <width>160</width>
+               <height>90</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>160</width>
+               <height>90</height>
+              </size>
+             </property>
+             <property name="frameShape">
+              <enum>QFrame::Box</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Sunken</enum>
+             </property>
+             <property name="scaledContents">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="horizontalSpacerVideoPreview">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </item>
+        </layout>
        </widget>
       </item>
      </layout>
@@ -880,7 +1057,7 @@
        <number>0</number>
       </property>
       <item>
-       <widget class="QGroupBox" name="groupBoxEffects2">
+       <widget class="QGroupBox" name="groupBoxBackground4">
         <property name="palette">
          <palette>
           <active>
@@ -919,19 +1096,206 @@
          </palette>
         </property>
         <property name="title">
-         <string>Effects</string>
+         <string>Background</string>
         </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_11">
+        <layout class="QVBoxLayout" name="verticalLayoutBackground4">
          <item>
-          <widget class="QCheckBox" name="checkBoxUseFading2">
-           <property name="toolTip">
-            <string>If checked, when switching displayed text, fades the old text out and fades the new text in .</string>
+          <layout class="QHBoxLayout" name="horizontalLayoutBackgroundType4">
+           <item>
+            <widget class="QRadioButton" name="radioButtonBgNone4">
+             <property name="text">
+              <string>None</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QRadioButton" name="radioButtonBgSolid4">
+             <property name="text">
+              <string>Solid Color</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QRadioButton" name="radioButtonBgImage4">
+             <property name="text">
+              <string>Image</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QRadioButton" name="radioButtonBgVideo4">
+             <property name="text">
+              <string>Video</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QGroupBox" name="groupBoxImageBackground4">
+           <property name="title">
+            <string>Image Background</string>
            </property>
-           <property name="text">
-            <string>Use fading effects</string>
-           </property>
+           <layout class="QHBoxLayout" name="horizontalLayout_45">
+            <item>
+             <widget class="QLineEdit" name="lineEditSongBackground4">
+              <property name="readOnly">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="buttonSongBackground4">
+              <property name="text">
+               <string>Browse...</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </widget>
          </item>
+         <item>
+          <widget class="QGroupBox" name="groupBoxVideoBackground4">
+           <property name="title">
+            <string>Video Background</string>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayoutVideoBackground4">
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayoutVideoPath4">
+              <item>
+               <widget class="QLabel" name="labelVideoPath4">
+                <property name="text">
+                 <string>Video File:</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="lineEditVideoPath4">
+                <property name="readOnly">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QToolButton" name="toolButtonBrowseVideo4">
+                <property name="text">
+                 <string>...</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayoutVideoOptions4">
+              <item>
+               <widget class="QCheckBox" name="checkBoxVideoLoop4">
+                <property name="text">
+                 <string>Loop video</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="labelVideoFillMode4">
+                <property name="text">
+                 <string>Fill Mode:</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QComboBox" name="comboBoxVideoFillMode4">
+                <item>
+                 <property name="text">
+                  <string>Stretch</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Fit</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Fill</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item>
+               <spacer name="horizontalSpacerVideo4">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayoutVideoPreview4">
+              <item>
+               <widget class="QLabel" name="labelVideoPreview4">
+                <property name="text">
+                 <string>Preview:</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="labelVideoThumbnail4">
+                <property name="minimumSize">
+                 <size>
+                  <width>160</width>
+                  <height>90</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>160</width>
+                  <height>90</height>
+                 </size>
+                </property>
+                <property name="frameShape">
+                 <enum>QFrame::Box</enum>
+                </property>
+                <property name="frameShadow">
+                 <enum>QFrame::Sunken</enum>
+                </property>
+                <property name="scaledContents">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <spacer name="horizontalSpacerVideoPreview4">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
          <item>
           <widget class="QCheckBox" name="checkBoxUseShadow2">
            <property name="toolTip">
@@ -1122,7 +1486,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QGroupBox" name="groupBoxSongEnding2">
+       <widget class="QGroupBox" name="groupBoxBackground3">
         <property name="palette">
          <palette>
           <active>
@@ -1161,21 +1525,206 @@
          </palette>
         </property>
         <property name="title">
-         <string>Show Song Ending</string>
+         <string>Background</string>
         </property>
-        <property name="checkable">
-         <bool>true</bool>
-        </property>
-        <layout class="QVBoxLayout" name="verticalLayout_6">
+        <layout class="QVBoxLayout" name="verticalLayoutBackground3">
          <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_16">
+          <layout class="QHBoxLayout" name="horizontalLayoutBackgroundType3">
            <item>
-            <widget class="QToolButton" name="toolButtonEndingColor2">
+            <widget class="QRadioButton" name="radioButtonBgNone3">
              <property name="text">
-              <string>Color...</string>
+              <string>None</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
+           <item>
+            <widget class="QRadioButton" name="radioButtonBgSolid3">
+             <property name="text">
+              <string>Solid Color</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QRadioButton" name="radioButtonBgImage3">
+             <property name="text">
+              <string>Image</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QRadioButton" name="radioButtonBgVideo3">
+             <property name="text">
+              <string>Video</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QGroupBox" name="groupBoxImageBackground3">
+           <property name="title">
+            <string>Image Background</string>
+           </property>
+           <layout class="QHBoxLayout" name="horizontalLayout_33">
+            <item>
+             <widget class="QLineEdit" name="lineEditSongBackground3">
+              <property name="readOnly">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="buttonSongBackground3">
+              <property name="text">
+               <string>Browse...</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QGroupBox" name="groupBoxVideoBackground3">
+           <property name="title">
+            <string>Video Background</string>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayoutVideoBackground3">
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayoutVideoPath3">
+              <item>
+               <widget class="QLabel" name="labelVideoPath3">
+                <property name="text">
+                 <string>Video File:</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="lineEditVideoPath3">
+                <property name="readOnly">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QToolButton" name="toolButtonBrowseVideo3">
+                <property name="text">
+                 <string>...</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayoutVideoOptions3">
+              <item>
+               <widget class="QCheckBox" name="checkBoxVideoLoop3">
+                <property name="text">
+                 <string>Loop video</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="labelVideoFillMode3">
+                <property name="text">
+                 <string>Fill Mode:</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QComboBox" name="comboBoxVideoFillMode3">
+                <item>
+                 <property name="text">
+                  <string>Stretch</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Fit</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Fill</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item>
+               <spacer name="horizontalSpacerVideo3">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayoutVideoPreview3">
+              <item>
+               <widget class="QLabel" name="labelVideoPreview3">
+                <property name="text">
+                 <string>Preview:</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="labelVideoThumbnail3">
+                <property name="minimumSize">
+                 <size>
+                  <width>160</width>
+                  <height>90</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>160</width>
+                  <height>90</height>
+                 </size>
+                </property>
+                <property name="frameShape">
+                 <enum>QFrame::Box</enum>
+                </property>
+                <property name="frameShadow">
+                 <enum>QFrame::Sunken</enum>
+                </property>
+                <property name="scaledContents">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <spacer name="horizontalSpacerVideoPreview3">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
            <item>
             <widget class="QGraphicsView" name="graphicViewEndingColor2">
              <property name="sizePolicy">
@@ -1319,69 +1868,246 @@
         </layout>
        </widget>
       </item>
-      <item>
-       <widget class="QGroupBox" name="groupBoxSongBackground2">
-        <property name="palette">
-         <palette>
-          <active>
-           <colorrole role="WindowText">
-            <brush brushstyle="SolidPattern">
-             <color alpha="255">
-              <red>85</red>
-              <green>0</green>
-              <blue>0</blue>
-             </color>
-            </brush>
-           </colorrole>
-          </active>
-          <inactive>
-           <colorrole role="WindowText">
-            <brush brushstyle="SolidPattern">
-             <color alpha="255">
-              <red>85</red>
-              <green>0</green>
-              <blue>0</blue>
-             </color>
-            </brush>
-           </colorrole>
-          </inactive>
-          <disabled>
-           <colorrole role="WindowText">
-            <brush brushstyle="SolidPattern">
-             <color alpha="255">
-              <red>120</red>
-              <green>120</green>
-              <blue>120</blue>
-             </color>
-            </brush>
-           </colorrole>
-          </disabled>
-         </palette>
-        </property>
-        <property name="title">
-         <string>Use Background Image</string>
-        </property>
-        <property name="checkable">
-         <bool>true</bool>
-        </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_8">
-         <item>
-          <widget class="QLineEdit" name="lineEditSongBackground2">
-           <property name="readOnly">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="buttonSongBackground2">
-           <property name="text">
-            <string>Browse...</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-      </item>
+       <item>
+        <widget class="QGroupBox" name="groupBoxBackground2">
+         <property name="palette">
+          <palette>
+           <active>
+            <colorrole role="WindowText">
+             <brush brushstyle="SolidPattern">
+              <color alpha="255">
+               <red>85</red>
+               <green>0</green>
+               <blue>0</blue>
+              </color>
+             </brush>
+            </colorrole>
+           </active>
+           <inactive>
+            <colorrole role="WindowText">
+             <brush brushstyle="SolidPattern">
+              <color alpha="255">
+               <red>85</red>
+               <green>0</green>
+               <blue>0</blue>
+              </color>
+             </brush>
+            </colorrole>
+           </inactive>
+           <disabled>
+            <colorrole role="WindowText">
+             <brush brushstyle="SolidPattern">
+              <color alpha="255">
+               <red>120</red>
+               <green>120</green>
+               <blue>120</blue>
+              </color>
+             </brush>
+            </colorrole>
+           </disabled>
+          </palette>
+         </property>
+         <property name="title">
+          <string>Background</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayoutBackground2">
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayoutBackgroundType2">
+            <item>
+             <widget class="QRadioButton" name="radioButtonBgNone2">
+              <property name="text">
+               <string>None</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="radioButtonBgSolid2">
+              <property name="text">
+               <string>Solid Color</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="radioButtonBgImage2">
+              <property name="text">
+               <string>Image</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="radioButtonBgVideo2">
+              <property name="text">
+               <string>Video</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="groupBoxImageBackground2">
+            <property name="title">
+             <string>Image Background</string>
+            </property>
+            <layout class="QHBoxLayout" name="horizontalLayout_8">
+             <item>
+              <widget class="QLineEdit" name="lineEditSongBackground2">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="buttonSongBackground2">
+               <property name="text">
+                <string>Browse...</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="groupBoxVideoBackground2">
+            <property name="title">
+             <string>Video Background</string>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayoutVideoBackground2">
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayoutVideoPath2">
+               <item>
+                <widget class="QLabel" name="labelVideoPath2">
+                 <property name="text">
+                  <string>Video File:</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLineEdit" name="lineEditVideoPath2">
+                 <property name="readOnly">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QToolButton" name="toolButtonBrowseVideo2">
+                 <property name="text">
+                  <string>...</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayoutVideoOptions2">
+               <item>
+                <widget class="QCheckBox" name="checkBoxVideoLoop2">
+                 <property name="text">
+                  <string>Loop video</string>
+                 </property>
+                 <property name="checked">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="labelVideoFillMode2">
+                 <property name="text">
+                  <string>Fill Mode:</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QComboBox" name="comboBoxVideoFillMode2">
+                 <item>
+                  <property name="text">
+                   <string>Stretch</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Fit</string>
+                  </property>
+                 </item>
+                 <item>
+                  <property name="text">
+                   <string>Fill</string>
+                  </property>
+                 </item>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacerVideo2">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayoutVideoPreview2">
+               <item>
+                <widget class="QLabel" name="labelVideoPreview2">
+                 <property name="text">
+                  <string>Preview:</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="labelVideoThumbnail2">
+                 <property name="minimumSize">
+                  <size>
+                   <width>160</width>
+                   <height>90</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>160</width>
+                   <height>90</height>
+                  </size>
+                 </property>
+                 <property name="frameShape">
+                  <enum>QFrame::Box</enum>
+                 </property>
+                 <property name="frameShadow">
+                  <enum>QFrame::Sunken</enum>
+                 </property>
+                 <property name="scaledContents">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <spacer name="horizontalSpacerVideoPreview2">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                 <property name="sizeHint" stdset="0">
+                  <size>
+                   <width>40</width>
+                   <height>20</height>
+                  </size>
+                 </property>
+                </spacer>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
       <item>
        <widget class="QGroupBox" name="groupBoxTextProperties2">
         <property name="palette">

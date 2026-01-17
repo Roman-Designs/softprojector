@@ -36,6 +36,11 @@ Rectangle {
 
     property int tranTime: 500
 
+    // Background type tracking: "none", "image", "video"
+    property string currentBackgroundType: "none"
+    // Current background video fill mode
+    property int currentBackVideoFillMode: VideoOutput.PreserveAspectCrop
+
     // Display Conrol signals
     signal exitClicked()
     signal nextClicked()
@@ -71,6 +76,24 @@ Rectangle {
         id: vidOut
         objectName: "vidOut"
         anchors.fill: parent
+    }
+
+    // Background video layer (behind backImage1/backImage2)
+    VideoOutput
+    {
+        id: backVideoOutput
+        objectName: "backVideoOutput"
+        anchors.fill: parent
+        visible: false
+        fillMode: VideoOutput.PreserveAspectCrop
+    }
+
+    MediaPlayer
+    {
+        id: backVideoPlayer
+        objectName: "backVideoPlayer"
+        videoOutput: backVideoOutput
+        loops: MediaPlayer.Infinite
     }
 
     Image
@@ -723,6 +746,69 @@ Rectangle {
         {
             player.pause()
         }
+    }
+
+    // Background video functions
+    function setBackgroundVideo(path, loop, fillMode)
+    {
+        if (!path || path === "") {
+            console.warn("setBackgroundVideo: Empty path provided")
+            return
+        }
+
+        // Configure fill mode
+        if (fillMode !== undefined && fillMode !== null) {
+            currentBackVideoFillMode = fillMode
+            backVideoOutput.fillMode = fillMode
+        }
+
+        // Configure loop setting
+        if (loop === true || loop === 1) {
+            backVideoPlayer.loops = MediaPlayer.Infinite
+        } else {
+            backVideoPlayer.loops = MediaPlayer.Once
+        }
+
+        // Set source and start playback
+        backVideoPlayer.source = path
+        backVideoOutput.visible = true
+
+        // Play the video
+        if (backVideoPlayer.playbackState === MediaPlayer.StoppedState ||
+            backVideoPlayer.playbackState === MediaPlayer.PausedState) {
+            backVideoPlayer.play()
+        }
+
+        currentBackgroundType = "video"
+        console.debug("Background video set:", path, "loop:", backVideoPlayer.loops, "fillMode:", fillMode)
+    }
+
+    function stopBackgroundVideo()
+    {
+        if (backVideoPlayer.playbackState === MediaPlayer.PlayingState ||
+            backVideoPlayer.playbackState === MediaPlayer.PausedState) {
+            backVideoPlayer.stop()
+        }
+        backVideoOutput.visible = false
+        backVideoPlayer.source = ""
+        currentBackgroundType = "none"
+        console.debug("Background video stopped")
+    }
+
+    function pauseBackgroundVideo()
+    {
+        if (backVideoPlayer.playbackState === MediaPlayer.PlayingState) {
+            backVideoPlayer.pause()
+        }
+        console.debug("Background video paused")
+    }
+
+    function resumeBackgroundVideo()
+    {
+        if (backVideoPlayer.playbackState === MediaPlayer.PausedState) {
+            backVideoPlayer.play()
+        }
+        console.debug("Background video resumed")
     }
 
     function positionControls(iX,iY,iSize,dOpacity)

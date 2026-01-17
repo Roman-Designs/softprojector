@@ -21,13 +21,15 @@
 #include <QMessageBox>
 #include <QtSql>
 #include <QStyleFactory>
+#include <QDebug>
 #include "../headers/softprojector.hpp"
+#include "../headers/theme.hpp"
 
 // Definitions for database versions 'dbVer' numbers
 // x - Official release. ex: 2 - for SoftProjector 2
 // xxx - Official sub realeas. ex: 201 - for SoftProjector 2.01
 // 990xxx - Development release. ex: 990206 - for SoftProjector 2 Development Build 6 (2db6)
-int const dbVer = 2;
+int const dbVer = 3;
 
 bool connect(QString database_file)
 {
@@ -83,15 +85,18 @@ bool connect(QString database_file)
                     "'use_background' BOOL, 'background_name' TEXT, 'background' BLOB, 'count' INTEGER DEFAULT 0, 'date' TEXT)");
             sq.exec("CREATE TABLE 'ThemeAnnounce' ('theme_id' INTEGER, 'disp' INTEGER, 'use_shadow' BOOL, 'use_fading' BOOL, "
                     "'use_blur_shadow' BOOL, 'use_background' BOOL, 'background_name' TEXT, 'background' BLOB, 'text_font' TEXT, "
-                    "'text_color' INTEGER, 'text_align_v' INTEGER, 'text_align_h' INTEGER, 'use_disp_1' BOOL)");
+                    "'text_color' INTEGER, 'text_align_v' INTEGER, 'text_align_h' INTEGER, 'use_disp_1' BOOL, "
+                    "'background_video_path' TEXT, 'background_video_loop' INTEGER DEFAULT 1, 'background_video_fill_mode' INTEGER DEFAULT 0)");
             sq.exec("CREATE TABLE 'ThemeBible' ('theme_id' INTEGER, 'disp' INTEGER, 'use_shadow' BOOL, 'use_fading' BOOL, "
                     "'use_blur_shadow' BOOL, 'use_background' BOOL, 'background_name' TEXT, 'background' BLOB, 'text_font' TEXT, "
                     "'text_color' INTEGER, 'text_align_v' INTEGER, 'text_align_h' INTEGER, 'caption_font' TEXT, "
                     "'caption_color' INTEGER, 'caption_align' INTEGER, 'caption_position' INTEGER, 'use_abbr' BOOL, "
                     "'screen_use' INTEGER, 'screen_position' INTEGER, 'use_disp_1' BOOL, "
-                    "'add_background_color_to_text' BOOL, 'text_rec_background_color' INTEGER, 'text_gen_background_color' INTEGER)");
+                    "'add_background_color_to_text' BOOL, 'text_rec_background_color' INTEGER, 'text_gen_background_color' INTEGER, "
+                    "'background_video_path' TEXT, 'background_video_loop' INTEGER DEFAULT 1, 'background_video_fill_mode' INTEGER DEFAULT 0)");
             sq.exec("CREATE TABLE 'ThemePassive' ('theme_id' INTEGER, 'disp' INTEGER, 'use_background' BOOL, "
-                    "'background_name' TEXT, 'background' BLOB, 'use_disp_1' BOOL)");
+                    "'background_name' TEXT, 'background' BLOB, 'use_disp_1' BOOL, "
+                    "'background_video_path' TEXT, 'background_video_loop' INTEGER DEFAULT 1, 'background_video_fill_mode' INTEGER DEFAULT 0)");
             sq.exec("CREATE TABLE 'ThemeSong' ('theme_id' INTEGER, 'disp' INTEGER, 'use_shadow' BOOL, 'use_fading' BOOL, "
                     "'use_blur_shadow' BOOL, 'show_stanza_title' BOOL, 'show_key' BOOL, 'show_number' BOOL, "
                     "'info_color' INTEGER, 'info_font' TEXT, 'info_align' INTEGER, 'show_song_ending' BOOL, "
@@ -99,7 +104,8 @@ bool connect(QString database_file)
                     "'use_background' BOOL, 'background_name' TEXT, 'background' BLOB, 'text_font' TEXT, "
                     "'text_color' INTEGER, 'text_align_v' INTEGER, 'text_align_h' INTEGER, "
                     "'screen_use' INTEGER, 'screen_position' INTEGER, 'use_disp_1' BOOL, "
-                    "'add_background_color_to_text' BOOL, 'text_rec_background_color' INTEGER, 'text_gen_background_color' INTEGER)");
+                    "'add_background_color_to_text' BOOL, 'text_rec_background_color' INTEGER, 'text_gen_background_color' INTEGER, "
+                    "'background_video_path' TEXT, 'background_video_loop' INTEGER DEFAULT 1, 'background_video_fill_mode' INTEGER DEFAULT 0)");
             //sq.exec("CREATE TABLE 'ThemeData' ('theme_id' INTEGER, 'type' TEXT, 'sets' TEXT)");
             sq.exec("CREATE TABLE 'Themes' ('id' INTEGER PRIMARY KEY  AUTOINCREMENT  NOT NULL , 'name' TEXT, 'comment' TEXT)");
         }
@@ -301,6 +307,20 @@ int main(int argc, char *argv[])
     sq.exec("PRAGMA user_version");
     sq.first();
     int dbVersion = sq.value(0).toInt();
+
+    // Database migration for video backgrounds (version 3)
+    if (dbVersion < dbVer) {
+        qDebug() << "Performing database migration from version" << dbVersion << "to" << dbVer;
+
+        // Migrate theme tables for video backgrounds
+        qDebug() << "Migrating theme tables for video backgrounds...";
+        migrateThemeTablesForVideoBackgrounds();
+
+        // Update database version
+        sq.exec(QString("PRAGMA user_version = %1").arg(dbVer));
+        dbVersion = dbVer;
+    }
+
     if(dbVer != dbVersion)
     {
         QString errortxt = QString("SoftProjector requires database vesion # %1\n"

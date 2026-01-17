@@ -33,6 +33,8 @@ TextSettingsBase::TextSettingsBase()
     backgroundName = "";
     backgroundPix = QPixmap(1,1);
     backgroundVideoPath = "";
+    backgroundVideoLoop = true;
+    backgroundVideoFillMode = 0;
     screenUse = 100;
     screenPosition = 0;
     transitionType = 0;
@@ -144,8 +146,8 @@ void TextSettingsBase::setBaseChangeHandles()
     isChangedTextFont = isChangedTextColor = isChangedTextShadowColor =
             isChangedAlingV = isChangedAlingH = isChangesTranType =
             isChangedEffectType = isChangedBackType = isChangedBackColor =
-            isChangedBackPix = isChangedBackVid = isChangedScreenUse =
-            isChangedScreenPos = isChangedSameDisp2 = isChangedSameDisp3 = isChangedSameDisp4 = true;
+            isChangedBackPix = isChangedBackVid = isChangedBackVidLoop = isChangedBackVidFillMode =
+            isChangedScreenUse = isChangedScreenPos = isChangedSameDisp2 = isChangedSameDisp3 = isChangedSameDisp4 = true;
 }
 
 void TextSettingsBase::resetBaseChangeHandles()
@@ -153,8 +155,8 @@ void TextSettingsBase::resetBaseChangeHandles()
     isChangedTextFont = isChangedTextColor = isChangedTextShadowColor =
             isChangedAlingV = isChangedAlingH = isChangesTranType =
             isChangedEffectType = isChangedBackType = isChangedBackColor =
-            isChangedBackPix = isChangedBackVid = isChangedScreenUse =
-            isChangedScreenPos = isChangedSameDisp2 = isChangedSameDisp3 = isChangedSameDisp4 = false;
+            isChangedBackPix = isChangedBackVid = isChangedBackVidLoop = isChangedBackVidFillMode =
+            isChangedScreenUse = isChangedScreenPos = isChangedSameDisp2 = isChangedSameDisp3 = isChangedSameDisp4 = false;
 }
 
 void TextSettingsBase::loadBase()
@@ -194,6 +196,10 @@ void TextSettingsBase::loadBase(QSqlQuery &sq)
         }
         else if(n == "backgroundVideoPath")
             backgroundVideoPath = sq.value(1).toString();
+        else if(n == "backgroundVideoLoop")
+            backgroundVideoLoop = sq.value(1).toBool();
+        else if(n == "backgroundVideoFillMode")
+            backgroundVideoFillMode = sq.value(1).toInt();
         else if(n == "screenUse")
             screenUse = sq.value(1).toInt();
         else if(n == "screenPosition")
@@ -235,6 +241,8 @@ void TextSettingsBase::saveBase(QSqlQuery &sq)
     saveIndividualSettings(sq,id,themeId,"backgroundType",backgroundType);
     saveIndividualSettings(sq,id,themeId,"backgroundColor",backgroundColor.rgb());
     saveIndividualSettings(sq,id,themeId,"backgroundVideoPath",backgroundVideoPath);
+    saveIndividualSettings(sq,id,themeId,"backgroundVideoLoop",backgroundVideoLoop);
+    saveIndividualSettings(sq,id,themeId,"backgroundVideoFillMode",backgroundVideoFillMode);
     saveIndividualSettings(sq,id,themeId,"screenUse",screenUse);
     saveIndividualSettings(sq,id,themeId,"screenPosition",screenPosition);
     saveIndividualSettings(sq,id,themeId,"useSameForDisp2",useSameForDisp2);
@@ -294,6 +302,12 @@ void TextSettingsBase::updateBase(QSqlQuery &sq)
 
     if(isChangedBackVid)
         updateIndividualSettings(sq,id,themeId,"backgroundVideoPath",backgroundVideoPath);
+
+    if(isChangedBackVidLoop)
+        updateIndividualSettings(sq,id,themeId,"backgroundVideoLoop",backgroundVideoLoop);
+
+    if(isChangedBackVidFillMode)
+        updateIndividualSettings(sq,id,themeId,"backgroundVideoFillMode",backgroundVideoFillMode);
 
     if(isChangedScreenUse)
         updateIndividualSettings(sq,id,themeId,"screenUse",screenUse);
@@ -751,6 +765,330 @@ DisplayControlsSettings::DisplayControlsSettings()
     opacity = 0.3;
 }
 
+VirtualOutputSettings::VirtualOutputSettings()
+{
+    enabled = false;
+    width = 1920;
+    height = 1080;
+    showLowerThird = false;
+    overlayPath = "";
+    useCustomTheme = false;
+    streamThemeId = 0;
+    mirrorDisplay1 = true;
+    lowerThirdFont.fromString("Arial,24,-1,5,50,0,0,0,0,0");
+    lowerThirdBgColor = QColor(0, 0, 0, 180);
+    lowerThirdTextColor = QColor(Qt::white);
+}
+
+ScreenFormatSettings::ScreenFormatSettings()
+{
+    aspectRatio = FORMAT_AUTO;
+    customWidth = 1920;
+    customHeight = 1080;
+    maintainAspect = true;
+    cropToFit = false;
+}
+
+void ScreenFormatSettings::save()
+{
+    QSqlQuery sq;
+    save(sq);
+}
+
+void ScreenFormatSettings::save(QSqlQuery &sq)
+{
+    sq.prepare("INSERT OR REPLACE INTO Settings (type, sets) VALUES (?, ?)");
+    QString set;
+    set = "aspectRatio = " + QString::number(aspectRatio);
+    set += "\ncustomWidth = " + QString::number(customWidth);
+    set += "\ncustomHeight = " + QString::number(customHeight);
+    if(maintainAspect)
+        set += "\nmaintainAspect = true";
+    else
+        set += "\nmaintainAspect = false";
+    if(cropToFit)
+        set += "\ncropToFit = true";
+    else
+        set += "\ncropToFit = false";
+    sq.addBindValue(set);
+    sq.exec();
+}
+
+void ScreenFormatSettings::load()
+{
+    QSqlQuery sq;
+    load(sq);
+}
+
+void ScreenFormatSettings::load(QSqlQuery &sq)
+{
+    QString n, v, s, set;
+    QStringList values;
+    sq.exec(QString("SELECT sets FROM Settings WHERE type = 'screenFormat'"));
+    if(sq.next())
+    {
+        set = sq.value(0).toString();
+        values = set.split("\n");
+        for(int i = 0; i < values.count(); ++i)
+        {
+            s = values.at(i);
+            QStringList keyval = s.split("=");
+            n = keyval.at(0).trimmed();
+            v = keyval.at(1).trimmed();
+            if(n == "aspectRatio")
+                aspectRatio = v.toInt();
+            else if(n == "customWidth")
+                customWidth = v.toInt();
+            else if(n == "customHeight")
+                customHeight = v.toInt();
+            else if(n == "maintainAspect")
+                maintainAspect = (v == "true");
+            else if(n == "cropToFit")
+                cropToFit = (v == "true");
+        }
+    }
+}
+
+void ScreenFormatSettings::update()
+{
+    QSqlQuery sq;
+    update(sq);
+}
+
+void ScreenFormatSettings::update(QSqlQuery &sq)
+{
+    sq.prepare("UPDATE Settings SET sets = ? WHERE type = 'screenFormat'");
+    QString set;
+    set = "aspectRatio = " + QString::number(aspectRatio);
+    set += "\ncustomWidth = " + QString::number(customWidth);
+    set += "\ncustomHeight = " + QString::number(customHeight);
+    if(maintainAspect)
+        set += "\nmaintainAspect = true";
+    else
+        set += "\nmaintainAspect = false";
+    if(cropToFit)
+        set += "\ncropToFit = true";
+    else
+        set += "\ncropToFit = false";
+    sq.addBindValue(set);
+    sq.exec();
+}
+
+void VirtualOutputSettings::save(QSqlQuery &sq)
+{
+    QString set;
+    if(enabled)
+        set = "enabled = true";
+    else
+        set = "enabled = false";
+    set += "\nwidth = " + QString::number(width);
+    set += "\nheight = " + QString::number(height);
+    if(showLowerThird)
+        set += "\nshowLowerThird = true";
+    else
+        set += "\nshowLowerThird = false";
+    set += "\noverlayPath = " + overlayPath;
+    if(useCustomTheme)
+        set += "\nuseCustomTheme = true";
+    else
+        set += "\nuseCustomTheme = false";
+    set += "\nstreamThemeId = " + QString::number(streamThemeId);
+    if(mirrorDisplay1)
+        set += "\nmirrorDisplay1 = true";
+    else
+        set += "\nmirrorDisplay1 = false";
+    set += "\nlowerThirdFont = " + lowerThirdFont.toString();
+    set += "\nlowerThirdBgColor = " + QString::number(lowerThirdBgColor.rgba());
+    set += "\nlowerThirdTextColor = " + QString::number(lowerThirdTextColor.rgba());
+
+    sq.prepare("INSERT OR REPLACE INTO Settings (type, sets) VALUES ('virtualOutput', ?)");
+    sq.addBindValue(set);
+    sq.exec();
+}
+
+void VirtualOutputSettings::load()
+{
+    QSqlQuery sq;
+    load(sq);
+}
+
+void VirtualOutputSettings::load(QSqlQuery &sq)
+{
+    QString t,n,v,s,set;
+    QStringList values;
+    sq.exec(QString("SELECT sets FROM Settings WHERE type = 'virtualOutput'"));
+    if(sq.next())
+    {
+        set = sq.value(0).toString();
+        values = set.split("\n");
+        for(int i(0); i<values.count(); ++i)
+        {
+            s = values.at(i);
+            QStringList keyval = s.split("=");
+            n = keyval.at(0).trimmed();
+            v = keyval.at(1).trimmed();
+            if(n == "enabled")
+                enabled = (v == "true");
+            else if(n == "width")
+                width = v.toInt();
+            else if(n == "height")
+                height = v.toInt();
+            else if(n == "showLowerThird")
+                showLowerThird = (v == "true");
+            else if(n == "overlayPath")
+                overlayPath = v;
+            else if(n == "useCustomTheme")
+                useCustomTheme = (v == "true");
+            else if(n == "streamThemeId")
+                streamThemeId = v.toInt();
+            else if(n == "mirrorDisplay1")
+                mirrorDisplay1 = (v == "true");
+            else if(n == "lowerThirdFont")
+                lowerThirdFont.fromString(v);
+            else if(n == "lowerThirdBgColor")
+                lowerThirdBgColor = QColor(v.toUInt());
+            else if(n == "lowerThirdTextColor")
+                lowerThirdTextColor = QColor(v.toUInt());
+        }
+    }
+}
+
+void VirtualOutputSettings::update()
+{
+    QSqlQuery sq;
+    update(sq);
+}
+
+void VirtualOutputSettings::update(QSqlQuery &sq)
+{
+    sq.prepare("UPDATE Settings SET sets = ? WHERE type = 'virtualOutput'");
+    QString set;
+    if(enabled)
+        set = "enabled = true";
+    else
+        set = "enabled = false";
+    set += "\nwidth = " + QString::number(width);
+    set += "\nheight = " + QString::number(height);
+    if(showLowerThird)
+        set += "\nshowLowerThird = true";
+    else
+        set += "\nshowLowerThird = false";
+    set += "\noverlayPath = " + overlayPath;
+    if(useCustomTheme)
+        set += "\nuseCustomTheme = true";
+    else
+        set += "\nuseCustomTheme = false";
+    set += "\nstreamThemeId = " + QString::number(streamThemeId);
+    if(mirrorDisplay1)
+        set += "\nmirrorDisplay1 = true";
+    else
+        set += "\nmirrorDisplay1 = false";
+    set += "\nlowerThirdFont = " + lowerThirdFont.toString();
+    set += "\nlowerThirdBgColor = " + QString::number(lowerThirdBgColor.rgba());
+    set += "\nlowerThirdTextColor = " + QString::number(lowerThirdTextColor.rgba());
+    sq.addBindValue(set);
+    sq.exec();
+}
+
+bool VirtualOutputSettings::isValid() const
+{
+    return width > 0 && height > 0 && width <= 7680 && height <= 4320;
+}
+
+bool VirtualOutputSettings::operator==(const VirtualOutputSettings &other) const
+{
+    return enabled == other.enabled &&
+           width == other.width &&
+           height == other.height &&
+           showLowerThird == other.showLowerThird &&
+           overlayPath == other.overlayPath &&
+           useCustomTheme == other.useCustomTheme &&
+           streamThemeId == other.streamThemeId &&
+           mirrorDisplay1 == other.mirrorDisplay1 &&
+           lowerThirdFont == other.lowerThirdFont &&
+           lowerThirdBgColor == other.lowerThirdBgColor &&
+           lowerThirdTextColor == other.lowerThirdTextColor;
+}
+
+void saveScreenFormatSettings(int screenIndex, const ScreenFormatSettings &settings)
+{
+    QSqlQuery sq;
+    QString type = QString("screenFormat%1").arg(screenIndex);
+    sq.prepare("INSERT OR REPLACE INTO Settings (type, sets) VALUES (?, ?)");
+    QString set;
+    set = "aspectRatio = " + QString::number(settings.aspectRatio);
+    set += "\ncustomWidth = " + QString::number(settings.customWidth);
+    set += "\ncustomHeight = " + QString::number(settings.customHeight);
+    if(settings.maintainAspect)
+        set += "\nmaintainAspect = true";
+    else
+        set += "\nmaintainAspect = false";
+    if(settings.cropToFit)
+        set += "\ncropToFit = true";
+    else
+        set += "\ncropToFit = false";
+    sq.addBindValue(type);
+    sq.addBindValue(set);
+    sq.exec();
+    qDebug() << "Saved screen format settings for screen" << screenIndex;
+}
+
+void loadScreenFormatSettings(int screenIndex, ScreenFormatSettings &settings)
+{
+    QSqlQuery sq;
+    QString type = QString("screenFormat%1").arg(screenIndex);
+    sq.exec(QString("SELECT sets FROM Settings WHERE type = '%1'").arg(type));
+    if(sq.next())
+    {
+        QString set = sq.value(0).toString();
+        QStringList values = set.split("\n");
+        for(int i = 0; i < values.count(); ++i)
+        {
+            QString s = values.at(i);
+            QStringList keyval = s.split("=");
+            if(keyval.count() >= 2)
+            {
+                QString n = keyval.at(0).trimmed();
+                QString v = keyval.at(1).trimmed();
+                if(n == "aspectRatio")
+                    settings.aspectRatio = v.toInt();
+                else if(n == "customWidth")
+                    settings.customWidth = v.toInt();
+                else if(n == "customHeight")
+                    settings.customHeight = v.toInt();
+                else if(n == "maintainAspect")
+                    settings.maintainAspect = (v == "true");
+                else if(n == "cropToFit")
+                    settings.cropToFit = (v == "true");
+            }
+        }
+    }
+    qDebug() << "Loaded screen format settings for screen" << screenIndex;
+}
+
+void updateScreenFormatSettings(int screenIndex, const ScreenFormatSettings &settings)
+{
+    QSqlQuery sq;
+    QString type = QString("screenFormat%1").arg(screenIndex);
+    sq.prepare("UPDATE Settings SET sets = ? WHERE type = ?");
+    QString set;
+    set = "aspectRatio = " + QString::number(settings.aspectRatio);
+    set += "\ncustomWidth = " + QString::number(settings.customWidth);
+    set += "\ncustomHeight = " + QString::number(settings.customHeight);
+    if(settings.maintainAspect)
+        set += "\nmaintainAspect = true";
+    else
+        set += "\nmaintainAspect = false";
+    if(settings.cropToFit)
+        set += "\ncropToFit = true";
+    else
+        set += "\ncropToFit = false";
+    sq.addBindValue(set);
+    sq.addBindValue(type);
+    sq.exec();
+    qDebug() << "Updated screen format settings for screen" << screenIndex;
+}
+
 SpSettings::SpSettings()
 {
     // Apply main window defaults
@@ -955,6 +1293,18 @@ void Settings::loadSettings()
                     slideSets.boundWidth = v.toInt();
             }
         }
+        else if(t == "virtualOutput")
+        {
+            general.virtualOutput.load(sq);
+        }
+        else if(t.startsWith("screenFormat"))
+        {
+            int screenIndex = t.midRef(12).toInt();
+            if(screenIndex >= 1 && screenIndex <= 4)
+            {
+                loadScreenFormatSettings(screenIndex, general.screenFormat[screenIndex - 1]);
+            }
+        }
     }
 
     // if no data exist, then create
@@ -1037,6 +1387,11 @@ void Settings::saveSettings()
     sq.exec(QString("UPDATE Settings SET sets = '%1' WHERE type = 'bible3'").arg(b3set));
     sq.exec(QString("UPDATE Settings SET sets = '%1' WHERE type = 'bible4'").arg(b4set));
     sq.exec(QString("UPDATE Settings SET sets = '%1' WHERE type = 'pix'").arg(pset));
+    general.virtualOutput.save(sq);
+    for(int i = 1; i <= 4; ++i)
+    {
+        saveScreenFormatSettings(i, general.screenFormat[i - 1]);
+    }
 }
 
 void Settings::saveNewSettings()
@@ -1049,6 +1404,11 @@ void Settings::saveNewSettings()
     sq.exec("INSERT OR REPLACE INTO Settings (type, sets) VALUES ('bible3', 'n=v')");
     sq.exec("INSERT OR REPLACE INTO Settings (type, sets) VALUES ('bible4', 'n=v')");
     sq.exec("INSERT OR REPLACE INTO Settings (type, sets) VALUES ('pix', 'n=v')");
+    sq.exec("INSERT OR REPLACE INTO Settings (type, sets) VALUES ('virtualOutput', 'n=v')");
+    sq.exec("INSERT OR REPLACE INTO Settings (type, sets) VALUES ('screenFormat1', 'aspectRatio=0\ncustomWidth=1920\ncustomHeight=1080\nmaintainAspect=true\ncropToFit=false')");
+    sq.exec("INSERT OR REPLACE INTO Settings (type, sets) VALUES ('screenFormat2', 'aspectRatio=0\ncustomWidth=1920\ncustomHeight=1080\nmaintainAspect=true\ncropToFit=false')");
+    sq.exec("INSERT OR REPLACE INTO Settings (type, sets) VALUES ('screenFormat3', 'aspectRatio=0\ncustomWidth=1920\ncustomHeight=1080\nmaintainAspect=true\ncropToFit=false')");
+    sq.exec("INSERT OR REPLACE INTO Settings (type, sets) VALUES ('screenFormat4', 'aspectRatio=0\ncustomWidth=1920\ncustomHeight=1080\nmaintainAspect=true\ncropToFit=false')");
 
     saveSettings();
 }

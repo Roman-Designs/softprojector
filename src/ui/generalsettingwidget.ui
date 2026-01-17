@@ -73,160 +73,860 @@
      </item>
     </layout>
    </item>
-   <item>
-    <widget class="QGroupBox" name="groupBoxDisplayScreen">
-     <property name="title">
-      <string>Display Screen Selection</string>
-     </property>
-     <layout class="QGridLayout" name="gridLayout">
-      <item row="1" column="1">
-       <widget class="QComboBox" name="comboBoxDisplayScreen_2">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="toolTip">
-         <string>Select onto which screen to display</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="2">
-       <spacer name="horizontalSpacer_3">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>162</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item row="0" column="2">
-       <spacer name="horizontalSpacer_2">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>162</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item row="2" column="2">
-       <spacer name="horizontalSpacer_5">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>40</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item row="0" column="0">
-       <widget class="QLabel" name="label_displayScreen">
-        <property name="text">
-         <string>Primary Display Screen:</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QComboBox" name="comboBoxDisplayScreen_3">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="toolTip">
-         <string>Select onto which screen to display</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QComboBox" name="comboBoxDisplayScreen">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="toolTip">
-         <string>Select onto which screen to dispaly</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_displayScreen_3">
-        <property name="text">
-         <string>Tertiary Display Screen:</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="label_displayScreen_2">
-        <property name="text">
-         <string>Secondary Display Screen:</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="0" colspan="3">
-       <widget class="QCheckBox" name="checkBoxDisplayOnStartUp">
-        <property name="text">
-         <string>Show Display Screen on SoftProjector Startup</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="label_displayScreen_4">
-        <property name="text">
-         <string>Quaternary Display Screen:</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="1">
-       <widget class="QComboBox" name="comboBoxDisplayScreen_4">
-        <property name="toolTip">
-         <string>Select onto which screen to display</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="2">
-       <spacer name="horizontalSpacer_6">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>40</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-     </layout>
-    </widget>
-   </item>
+    <item>
+     <widget class="QGroupBox" name="groupBoxDisplayScreen">
+      <property name="title">
+       <string>Display Screen Selection</string>
+      </property>
+      <layout class="QGridLayout" name="gridLayout">
+       <item row="1" column="1">
+        <widget class="QComboBox" name="comboBoxDisplayScreen_2">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="toolTip">
+          <string>Select onto which screen to display</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="2">
+        <spacer name="horizontalSpacer_3">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>162</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="0" column="2">
+        <spacer name="horizontalSpacer_2">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>162</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="2" column="2">
+        <spacer name="horizontalSpacer_5">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="label_displayScreen">
+         <property name="text">
+          <string>Primary Display Screen:</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QComboBox" name="comboBoxDisplayScreen_3">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="toolTip">
+          <string>Select onto which screen to display</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QComboBox" name="comboBoxDisplayScreen">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="toolTip">
+          <string>Select onto which screen to dispaly</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="label_displayScreen_3">
+         <property name="text">
+          <string>Tertiary Display Screen:</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="label_displayScreen_2">
+         <property name="text">
+          <string>Secondary Display Screen:</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="0" colspan="3">
+        <widget class="QCheckBox" name="checkBoxDisplayOnStartUp">
+         <property name="text">
+          <string>Show Display Screen on SoftProjector Startup</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="label_displayScreen_4">
+         <property name="text">
+          <string>Quaternary Display Screen:</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1">
+        <widget class="QComboBox" name="comboBoxDisplayScreen_4">
+         <property name="toolTip">
+          <string>Select onto which screen to display</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="2">
+        <spacer name="horizontalSpacer_6">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QGroupBox" name="groupBoxScreenFormat">
+      <property name="title">
+       <string>Screen Format Settings</string>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayoutScreenFormat">
+       <item>
+        <widget class="QTabWidget" name="tabWidgetScreenFormat">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="toolTip">
+          <string>Configure output format for each display screen</string>
+         </property>
+         <property name="tabsClosable">
+          <bool>false</bool>
+         </property>
+         <property name="movable">
+          <bool>false</bool>
+         </property>
+         <widget class="QWidget" name="tabScreenFormat1">
+          <attribute name="title">
+           <string>Screen 1</string>
+          </attribute>
+          <layout class="QFormLayout" name="formLayoutScreenFormat1">
+           <item row="0" column="0">
+            <widget class="QLabel" name="labelFormat1">
+             <property name="text">
+              <string>Format:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QComboBox" name="comboBoxFormat1">
+             <property name="toolTip">
+              <string>Select output format preset</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="labelCustomWidth1">
+             <property name="text">
+              <string>Custom Width:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <layout class="QHBoxLayout" name="horizontalLayoutCustomWidth1">
+             <item>
+              <widget class="QSpinBox" name="spinBoxCustomWidth1">
+               <property name="minimum">
+                <number>320</number>
+               </property>
+               <property name="maximum">
+                <number>7680</number>
+               </property>
+               <property name="value">
+                <number>1920</number>
+               </property>
+               <property name="toolTip">
+                <string>Custom output width in pixels</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="labelPx1">
+               <property name="text">
+                <string>px</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="labelCustomHeight1">
+             <property name="text">
+              <string>Custom Height:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <layout class="QHBoxLayout" name="horizontalLayoutCustomHeight1">
+             <item>
+              <widget class="QSpinBox" name="spinBoxCustomHeight1">
+               <property name="minimum">
+                <number>240</number>
+               </property>
+               <property name="maximum">
+                <number>4320</number>
+               </property>
+               <property name="value">
+                <number>1080</number>
+               </property>
+               <property name="toolTip">
+                <string>Custom output height in pixels</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="labelPx2">
+               <property name="text">
+                <string>px</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+            <item row="3" column="0">
+             <spacer name="verticalSpacerFormat1">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>10</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item row="3" column="1">
+             <layout class="QVBoxLayout" name="verticalLayoutCheckboxes1">
+              <item>
+               <widget class="QCheckBox" name="checkBoxMaintainAspect1">
+                <property name="toolTip">
+                 <string>Maintain aspect ratio when scaling content</string>
+                </property>
+                <property name="text">
+                 <string>Maintain aspect ratio</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="checkBoxCropToFit1">
+                <property name="toolTip">
+                 <string>Crop content to fill the output area</string>
+                </property>
+                <property name="text">
+                 <string>Crop to fit</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item row="4" column="0" colspan="2">
+             <layout class="QHBoxLayout" name="horizontalLayoutPreview1">
+              <item>
+               <widget class="QLabel" name="labelPreview1">
+                <property name="minimumSize">
+                 <size>
+                  <width>160</width>
+                  <height>120</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>200</width>
+                  <height>150</height>
+                 </size>
+                </property>
+                <property name="frameShape">
+                 <enum>QFrame::Box</enum>
+                </property>
+                <property name="frameShadow">
+                 <enum>QFrame::Sunken</enum>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignCenter</set>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="labelResolutionInfo1">
+                <property name="text">
+                 <string>Resolution Info</string>
+                </property>
+                <property name="wordWrap">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+         </widget>
+         <widget class="QWidget" name="tabScreenFormat2">
+          <attribute name="title">
+           <string>Screen 2</string>
+          </attribute>
+          <layout class="QFormLayout" name="formLayoutScreenFormat2">
+           <item row="0" column="0">
+            <widget class="QLabel" name="labelFormat2">
+             <property name="text">
+              <string>Format:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QComboBox" name="comboBoxFormat2">
+             <property name="toolTip">
+              <string>Select output format preset</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="labelCustomWidth2">
+             <property name="text">
+              <string>Custom Width:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <layout class="QHBoxLayout" name="horizontalLayoutCustomWidth2">
+             <item>
+              <widget class="QSpinBox" name="spinBoxCustomWidth2">
+               <property name="minimum">
+                <number>320</number>
+               </property>
+               <property name="maximum">
+                <number>7680</number>
+               </property>
+               <property name="value">
+                <number>1920</number>
+               </property>
+               <property name="toolTip">
+                <string>Custom output width in pixels</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="labelPx3">
+               <property name="text">
+                <string>px</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="labelCustomHeight2">
+             <property name="text">
+              <string>Custom Height:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <layout class="QHBoxLayout" name="horizontalLayoutCustomHeight2">
+             <item>
+              <widget class="QSpinBox" name="spinBoxCustomHeight2">
+               <property name="minimum">
+                <number>240</number>
+               </property>
+               <property name="maximum">
+                <number>4320</number>
+               </property>
+               <property name="value">
+                <number>1080</number>
+               </property>
+               <property name="toolTip">
+                <string>Custom output height in pixels</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="labelPx4">
+               <property name="text">
+                <string>px</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+            <item row="3" column="0">
+             <spacer name="verticalSpacerFormat2">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>10</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item row="3" column="1">
+             <layout class="QVBoxLayout" name="verticalLayoutCheckboxes2">
+              <item>
+               <widget class="QCheckBox" name="checkBoxMaintainAspect2">
+                <property name="toolTip">
+                 <string>Maintain aspect ratio when scaling content</string>
+                </property>
+                <property name="text">
+                 <string>Maintain aspect ratio</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="checkBoxCropToFit2">
+                <property name="toolTip">
+                 <string>Crop content to fill the output area</string>
+                </property>
+                <property name="text">
+                 <string>Crop to fit</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item row="4" column="0" colspan="2">
+             <layout class="QHBoxLayout" name="horizontalLayoutPreview2">
+              <item>
+               <widget class="QLabel" name="labelPreview2">
+                <property name="minimumSize">
+                 <size>
+                  <width>160</width>
+                  <height>120</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>200</width>
+                  <height>150</height>
+                 </size>
+                </property>
+                <property name="frameShape">
+                 <enum>QFrame::Box</enum>
+                </property>
+                <property name="frameShadow">
+                 <enum>QFrame::Sunken</enum>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignCenter</set>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="labelResolutionInfo2">
+                <property name="text">
+                 <string>Resolution Info</string>
+                </property>
+                <property name="wordWrap">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+         </widget>
+         <widget class="QWidget" name="tabScreenFormat3">
+          <attribute name="title">
+           <string>Screen 3</string>
+          </attribute>
+          <layout class="QFormLayout" name="formLayoutScreenFormat3">
+           <item row="0" column="0">
+            <widget class="QLabel" name="labelFormat3">
+             <property name="text">
+              <string>Format:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QComboBox" name="comboBoxFormat3">
+             <property name="toolTip">
+              <string>Select output format preset</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="labelCustomWidth3">
+             <property name="text">
+              <string>Custom Width:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <layout class="QHBoxLayout" name="horizontalLayoutCustomWidth3">
+             <item>
+              <widget class="QSpinBox" name="spinBoxCustomWidth3">
+               <property name="minimum">
+                <number>320</number>
+               </property>
+               <property name="maximum">
+                <number>7680</number>
+               </property>
+               <property name="value">
+                <number>1920</number>
+               </property>
+               <property name="toolTip">
+                <string>Custom output width in pixels</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="labelPx5">
+               <property name="text">
+                <string>px</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="labelCustomHeight3">
+             <property name="text">
+              <string>Custom Height:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <layout class="QHBoxLayout" name="horizontalLayoutCustomHeight3">
+             <item>
+              <widget class="QSpinBox" name="spinBoxCustomHeight3">
+               <property name="minimum">
+                <number>240</number>
+               </property>
+               <property name="maximum">
+                <number>4320</number>
+               </property>
+               <property name="value">
+                <number>1080</number>
+               </property>
+               <property name="toolTip">
+                <string>Custom output height in pixels</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="labelPx6">
+               <property name="text">
+                <string>px</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+            <item row="3" column="0">
+             <spacer name="verticalSpacerFormat3">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>10</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item row="3" column="1">
+             <layout class="QVBoxLayout" name="verticalLayoutCheckboxes3">
+              <item>
+               <widget class="QCheckBox" name="checkBoxMaintainAspect3">
+                <property name="toolTip">
+                 <string>Maintain aspect ratio when scaling content</string>
+                </property>
+                <property name="text">
+                 <string>Maintain aspect ratio</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="checkBoxCropToFit3">
+                <property name="toolTip">
+                 <string>Crop content to fill the output area</string>
+                </property>
+                <property name="text">
+                 <string>Crop to fit</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item row="4" column="0" colspan="2">
+             <layout class="QHBoxLayout" name="horizontalLayoutPreview3">
+              <item>
+               <widget class="QLabel" name="labelPreview3">
+                <property name="minimumSize">
+                 <size>
+                  <width>160</width>
+                  <height>120</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>200</width>
+                  <height>150</height>
+                 </size>
+                </property>
+                <property name="frameShape">
+                 <enum>QFrame::Box</enum>
+                </property>
+                <property name="frameShadow">
+                 <enum>QFrame::Sunken</enum>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignCenter</set>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="labelResolutionInfo3">
+                <property name="text">
+                 <string>Resolution Info</string>
+                </property>
+                <property name="wordWrap">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+         </widget>
+         <widget class="QWidget" name="tabScreenFormat4">
+          <attribute name="title">
+           <string>Screen 4</string>
+          </attribute>
+          <layout class="QFormLayout" name="formLayoutScreenFormat4">
+           <item row="0" column="0">
+            <widget class="QLabel" name="labelFormat4">
+             <property name="text">
+              <string>Format:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QComboBox" name="comboBoxFormat4">
+             <property name="toolTip">
+              <string>Select output format preset</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="labelCustomWidth4">
+             <property name="text">
+              <string>Custom Width:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <layout class="QHBoxLayout" name="horizontalLayoutCustomWidth4">
+             <item>
+              <widget class="QSpinBox" name="spinBoxCustomWidth4">
+               <property name="minimum">
+                <number>320</number>
+               </property>
+               <property name="maximum">
+                <number>7680</number>
+               </property>
+               <property name="value">
+                <number>1920</number>
+               </property>
+               <property name="toolTip">
+                <string>Custom output width in pixels</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="labelPx7">
+               <property name="text">
+                <string>px</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="labelCustomHeight4">
+             <property name="text">
+              <string>Custom Height:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <layout class="QHBoxLayout" name="horizontalLayoutCustomHeight4">
+             <item>
+              <widget class="QSpinBox" name="spinBoxCustomHeight4">
+               <property name="minimum">
+                <number>240</number>
+               </property>
+               <property name="maximum">
+                <number>4320</number>
+               </property>
+               <property name="value">
+                <number>1080</number>
+               </property>
+               <property name="toolTip">
+                <string>Custom output height in pixels</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="labelPx8">
+               <property name="text">
+                <string>px</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+            <item row="3" column="0">
+             <spacer name="verticalSpacerFormat4">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>10</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item row="3" column="1">
+             <layout class="QVBoxLayout" name="verticalLayoutCheckboxes4">
+              <item>
+               <widget class="QCheckBox" name="checkBoxMaintainAspect4">
+                <property name="toolTip">
+                 <string>Maintain aspect ratio when scaling content</string>
+                </property>
+                <property name="text">
+                 <string>Maintain aspect ratio</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="checkBoxCropToFit4">
+                <property name="toolTip">
+                 <string>Crop content to fill the output area</string>
+                </property>
+                <property name="text">
+                 <string>Crop to fit</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item row="4" column="0" colspan="2">
+             <layout class="QHBoxLayout" name="horizontalLayoutPreview4">
+              <item>
+               <widget class="QLabel" name="labelPreview4">
+                <property name="minimumSize">
+                 <size>
+                  <width>160</width>
+                  <height>120</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>200</width>
+                  <height>150</height>
+                 </size>
+                </property>
+                <property name="frameShape">
+                 <enum>QFrame::Box</enum>
+                </property>
+                <property name="frameShadow">
+                 <enum>QFrame::Sunken</enum>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignCenter</set>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="labelResolutionInfo4">
+                <property name="text">
+                 <string>Resolution Info</string>
+                </property>
+                <property name="wordWrap">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+         </widget>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
    <item>
     <widget class="QGroupBox" name="groupBoxDisplayControls">
      <property name="title">
@@ -383,9 +1083,18 @@
       </item>
      </layout>
     </widget>
-   </item>
-   <item>
-    <spacer name="verticalSpacer">
+    </item>
+    <item>
+     <widget class="QGroupBox" name="groupBoxVirtualOutput">
+      <property name="title">
+       <string>Virtual Output (OBS Streaming)</string>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayoutVirtualOutput">
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <spacer name="verticalSpacer">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
      </property>
@@ -423,18 +1132,38 @@
    </item>
   </layout>
  </widget>
- <tabstops>
-  <tabstop>checkBoxDisplayOnTop</tabstop>
-  <tabstop>comboBoxTheme</tabstop>
-  <tabstop>pushButtonAddTheme</tabstop>
-  <tabstop>comboBoxDisplayScreen</tabstop>
-  <tabstop>comboBoxDisplayScreen_2</tabstop>
-  <tabstop>comboBoxIconSize</tabstop>
-  <tabstop>comboBoxControlsAlignV</tabstop>
-  <tabstop>comboBoxControlsAlignH</tabstop>
-  <tabstop>horizontalSliderOpacity</tabstop>
-  <tabstop>pushButtonDefault</tabstop>
- </tabstops>
+  <tabstops>
+   <tabstop>checkBoxDisplayOnTop</tabstop>
+   <tabstop>comboBoxTheme</tabstop>
+   <tabstop>pushButtonAddTheme</tabstop>
+   <tabstop>comboBoxDisplayScreen</tabstop>
+   <tabstop>comboBoxDisplayScreen_2</tabstop>
+   <tabstop>comboBoxFormat1</tabstop>
+   <tabstop>spinBoxCustomWidth1</tabstop>
+   <tabstop>spinBoxCustomHeight1</tabstop>
+   <tabstop>checkBoxMaintainAspect1</tabstop>
+   <tabstop>checkBoxCropToFit1</tabstop>
+   <tabstop>comboBoxFormat2</tabstop>
+   <tabstop>spinBoxCustomWidth2</tabstop>
+   <tabstop>spinBoxCustomHeight2</tabstop>
+   <tabstop>checkBoxMaintainAspect2</tabstop>
+   <tabstop>checkBoxCropToFit2</tabstop>
+   <tabstop>comboBoxFormat3</tabstop>
+   <tabstop>spinBoxCustomWidth3</tabstop>
+   <tabstop>spinBoxCustomHeight3</tabstop>
+   <tabstop>checkBoxMaintainAspect3</tabstop>
+   <tabstop>checkBoxCropToFit3</tabstop>
+   <tabstop>comboBoxFormat4</tabstop>
+   <tabstop>spinBoxCustomWidth4</tabstop>
+   <tabstop>spinBoxCustomHeight4</tabstop>
+   <tabstop>checkBoxMaintainAspect4</tabstop>
+   <tabstop>checkBoxCropToFit4</tabstop>
+   <tabstop>comboBoxIconSize</tabstop>
+   <tabstop>comboBoxControlsAlignV</tabstop>
+   <tabstop>comboBoxControlsAlignH</tabstop>
+   <tabstop>horizontalSliderOpacity</tabstop>
+   <tabstop>pushButtonDefault</tabstop>
+  </tabstops>
  <resources>
   <include location="softprojector.qrc"/>
  </resources>
