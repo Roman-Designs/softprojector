@@ -773,11 +773,8 @@ VirtualOutputSettings::VirtualOutputSettings()
     showLowerThird = false;
     overlayPath = "";
     useCustomTheme = false;
-    streamThemeId = 0;
+     streamThemeId = 0;
     mirrorDisplay1 = true;
-    lowerThirdFont = "Arial,24,-1,5,50,0,0,0,0,0";
-    lowerThirdBgColor = QColor(0, 0, 0, 180);
-    lowerThirdTextColor = QColor(Qt::white);
 }
 
 ScreenFormatSettings::ScreenFormatSettings()
@@ -896,10 +893,7 @@ void VirtualOutputSettings::save(QSqlQuery &sq)
     if(mirrorDisplay1)
         set += "\nmirrorDisplay1 = true";
     else
-        set += "\nmirrorDisplay1 = false";
-    set += "\nlowerThirdFont = " + lowerThirdFont;
-    set += "\nlowerThirdBgColor = " + QString::number(lowerThirdBgColor.rgba());
-    set += "\nlowerThirdTextColor = " + QString::number(lowerThirdTextColor.rgba());
+         set += "\nmirrorDisplay1 = false";
 
     sq.prepare("INSERT OR REPLACE INTO Settings (type, sets) VALUES ('virtualOutput', ?)");
     sq.addBindValue(set);
@@ -939,17 +933,11 @@ void VirtualOutputSettings::load(QSqlQuery &sq)
                 overlayPath = v;
             else if(n == "useCustomTheme")
                 useCustomTheme = (v == "true");
-            else if(n == "streamThemeId")
+             else if(n == "streamThemeId")
                 streamThemeId = v.toInt();
             else if(n == "mirrorDisplay1")
                 mirrorDisplay1 = (v == "true");
-            else if(n == "lowerThirdFont")
-                lowerThirdFont = v;
-            else if(n == "lowerThirdBgColor")
-                lowerThirdBgColor = QColor(v.toUInt());
-            else if(n == "lowerThirdTextColor")
-                lowerThirdTextColor = QColor(v.toUInt());
-        }
+         }
     }
 }
 
@@ -980,12 +968,9 @@ void VirtualOutputSettings::update(QSqlQuery &sq)
         set += "\nuseCustomTheme = false";
     set += "\nstreamThemeId = " + QString::number(streamThemeId);
     if(mirrorDisplay1)
-        set += "\nmirrorDisplay1 = true";
+         set += "\nmirrorDisplay1 = true";
     else
         set += "\nmirrorDisplay1 = false";
-    set += "\nlowerThirdFont = " + lowerThirdFont;
-    set += "\nlowerThirdBgColor = " + QString::number(lowerThirdBgColor.rgba());
-    set += "\nlowerThirdTextColor = " + QString::number(lowerThirdTextColor.rgba());
     sq.addBindValue(set);
     sq.exec();
 }
@@ -1004,10 +989,7 @@ bool VirtualOutputSettings::operator==(const VirtualOutputSettings &other) const
            overlayPath == other.overlayPath &&
            useCustomTheme == other.useCustomTheme &&
            streamThemeId == other.streamThemeId &&
-           mirrorDisplay1 == other.mirrorDisplay1 &&
-           lowerThirdFont == other.lowerThirdFont &&
-           lowerThirdBgColor == other.lowerThirdBgColor &&
-           lowerThirdTextColor == other.lowerThirdTextColor;
+           mirrorDisplay1 == other.mirrorDisplay1;
 }
 
 void saveScreenFormatSettings(int screenIndex, const ScreenFormatSettings &settings)

@@ -84,8 +84,6 @@ public:
     void setLogoOverlay(const QString &imagePath);
     void setLowerThirdConfig(bool show, const QString &text, const QFont &font,
                             const QColor &bgColor, const QColor &textColor);
-    void showLowerThird(const QString &text);
-    void hideLowerThird();
 
     // Display update methods
     void updateDisplay();
@@ -173,11 +171,6 @@ private:
 
     // Overlay configuration
     QString m_logoImagePath;
-    bool m_lowerThirdEnabled;
-    QString m_lowerThirdText;
-    QFont m_lowerThirdFont;
-    QColor m_lowerThirdBgColor;
-    QColor m_lowerThirdTextColor;
 
     // QML and rendering components
     QQuickView *m_window;

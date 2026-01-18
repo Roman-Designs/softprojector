@@ -23,30 +23,24 @@
 #include <QDebug>
 
 VirtualOutput::VirtualOutput(QObject *parent)
-    : QObject(parent),
-      m_enabled(false),
-      m_mirrorDisplay1(true),
-      m_themeId(-1),
-      m_resolutionPreset(RES_1080P),
-      m_resolution(1920, 1080),
-      m_lowerThirdEnabled(false),
-      m_window(nullptr),
-      m_imageProvider(nullptr),
-      m_backImSwitch1(false),
-      m_backImSwitch2(false),
-      m_textImSwitch1(false),
-      m_textImSwitch2(false),
-      m_isNewBackground(false),
-      m_back1to2(true),
-      m_text1to2(true),
-      m_backType(B_NONE)
+     : QObject(parent),
+       m_enabled(false),
+       m_mirrorDisplay1(true),
+       m_themeId(-1),
+       m_resolutionPreset(RES_1080P),
+       m_resolution(1920, 1080),
+       m_window(nullptr),
+       m_imageProvider(nullptr),
+       m_backImSwitch1(false),
+       m_backImSwitch2(false),
+       m_textImSwitch1(false),
+       m_textImSwitch2(false),
+       m_isNewBackground(false),
+       m_back1to2(true),
+       m_text1to2(true),
+       m_backType(B_NONE)
 {
     m_currentColor.setRgb(0, 0, 0, 0);
-
-    // Set default lower third styling
-    m_lowerThirdFont = QFont("Arial", 24);
-    m_lowerThirdBgColor = QColor(0, 0, 0, 200); // Semi-transparent black
-    m_lowerThirdTextColor = QColor(255, 255, 255); // White
 }
 
 VirtualOutput::~VirtualOutput()
@@ -239,54 +233,6 @@ void VirtualOutput::setLogoOverlay(const QString &imagePath)
     }
 
     qDebug() << "VirtualOutput logo overlay set to:" << imagePath;
-}
-
-void VirtualOutput::setLowerThirdConfig(bool show, const QString &text, const QFont &font,
-                                        const QColor &bgColor, const QColor &textColor)
-{
-    m_lowerThirdEnabled = show;
-    m_lowerThirdText = text;
-    m_lowerThirdFont = font;
-    m_lowerThirdBgColor = bgColor;
-    m_lowerThirdTextColor = textColor;
-
-    if (m_window && m_window->rootObject())
-    {
-        QObject *rootObject = m_window->rootObject();
-        QMetaObject::invokeMethod(rootObject, "setLowerThirdConfig",
-                                  Q_ARG(bool, show),
-                                  Q_ARG(QString, text),
-                                  Q_ARG(QFont, font),
-                                  Q_ARG(QColor, bgColor),
-                                  Q_ARG(QColor, textColor));
-    }
-}
-
-void VirtualOutput::showLowerThird(const QString &text)
-{
-    m_lowerThirdText = text;
-    m_lowerThirdEnabled = true;
-
-    if (m_window && m_window->rootObject())
-    {
-        QObject *rootObject = m_window->rootObject();
-        QMetaObject::invokeMethod(rootObject, "showLowerThird", Q_ARG(QString, text));
-    }
-
-    qDebug() << "VirtualOutput lower third shown:" << text;
-}
-
-void VirtualOutput::hideLowerThird()
-{
-    m_lowerThirdEnabled = false;
-
-    if (m_window && m_window->rootObject())
-    {
-        QObject *rootObject = m_window->rootObject();
-        QMetaObject::invokeMethod(rootObject, "hideLowerThird");
-    }
-
-    qDebug() << "VirtualOutput lower third hidden";
 }
 
 void VirtualOutput::updateDisplay()

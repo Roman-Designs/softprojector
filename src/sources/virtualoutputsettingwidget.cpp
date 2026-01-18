@@ -89,20 +89,7 @@ void VirtualOutputSettingWidget::loadSettings()
         ui->comboBoxTheme->setCurrentIndex(0);
     }
 
-    ui->checkBoxShowLowerThird->setChecked(m_settings.showLowerThird);
     ui->lineEditOverlayPath->setText(m_settings.overlayPath);
-
-    QFont font;
-    if (!m_settings.lowerThirdFont.isEmpty()) {
-        font.fromString(m_settings.lowerThirdFont);
-    } else {
-        font = QFont("Arial", 24);
-    }
-    ui->fontComboBoxLowerThird->setCurrentFont(font);
-    updateFontPreview();
-
-    updateColorPreview(ui->graphicsViewLowerThirdBgColor, m_settings.lowerThirdBgColor);
-    updateColorPreview(ui->graphicsViewLowerThirdTextColor, m_settings.lowerThirdTextColor);
 
     ui->checkBoxAlwaysOnTop->setChecked(m_settings.displayIsOnTop);
 
@@ -144,14 +131,7 @@ void VirtualOutputSettingWidget::saveSettings()
         }
     }
 
-    m_settings.showLowerThird = ui->checkBoxShowLowerThird->isChecked();
-    m_settings.lowerThirdFont = ui->fontComboBoxLowerThird->currentFont().toString();
     m_settings.overlayPath = ui->lineEditOverlayPath->text();
-
-    QPalette bgPalette = ui->graphicsViewLowerThirdBgColor->palette();
-    m_settings.lowerThirdBgColor = bgPalette.color(QPalette::Base);
-    QPalette textPalette = ui->graphicsViewLowerThirdTextColor->palette();
-    m_settings.lowerThirdTextColor = textPalette.color(QPalette::Base);
 
     m_settings.displayIsOnTop = ui->checkBoxAlwaysOnTop->isChecked();
 }

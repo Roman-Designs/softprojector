@@ -327,9 +327,6 @@ public:
     int streamThemeId;
     bool mirrorDisplay1;
     bool displayIsOnTop;
-    QString lowerThirdFont;
-    QColor lowerThirdBgColor;
-    QColor lowerThirdTextColor;
 
     void save();
     void save(QSqlQuery &sq);

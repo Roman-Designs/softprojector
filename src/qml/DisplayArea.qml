@@ -94,6 +94,26 @@ Rectangle {
         objectName: "backVideoPlayer"
         videoOutput: backVideoOutput
         loops: MediaPlayer.Infinite
+        autoPlay: false
+        
+        onError: function(error, errorString) {
+            console.error("Background video player error:", error, errorString)
+        }
+        
+        onStatusChanged: {
+            if (status === MediaPlayer.Loading) {
+                console.debug("Background video loading...")
+            } else if (status === MediaPlayer.Loaded) {
+                console.debug("Background video loaded, attempting to play")
+                if (backVideoOutput.visible && playbackState === MediaPlayer.StoppedState) {
+                    play()
+                }
+            } else if (status === MediaPlayer.InvalidMedia) {
+                console.error("Background video: Invalid media file")
+            } else if (status === MediaPlayer.Buffering) {
+                console.debug("Background video buffering...")
+            }
+        }
     }
 
     Image
@@ -756,10 +776,20 @@ Rectangle {
             return
         }
 
+        console.debug("setBackgroundVideo called with path:", path)
+
+        // Stop any current playback first
+        if (backVideoPlayer.playbackState === MediaPlayer.PlayingState ||
+            backVideoPlayer.playbackState === MediaPlayer.PausedState) {
+            backVideoPlayer.stop()
+        }
+
         // Configure fill mode
         if (fillMode !== undefined && fillMode !== null) {
             currentBackVideoFillMode = fillMode
             backVideoOutput.fillMode = fillMode
+        } else {
+            backVideoOutput.fillMode = VideoOutput.PreserveAspectCrop
         }
 
         // Configure loop setting
@@ -769,18 +799,14 @@ Rectangle {
             backVideoPlayer.loops = MediaPlayer.Once
         }
 
-        // Set source and start playback
-        backVideoPlayer.source = path
+        // Make output visible BEFORE setting source
         backVideoOutput.visible = true
-
-        // Play the video
-        if (backVideoPlayer.playbackState === MediaPlayer.StoppedState ||
-            backVideoPlayer.playbackState === MediaPlayer.PausedState) {
-            backVideoPlayer.play()
-        }
-
         currentBackgroundType = "video"
-        console.debug("Background video set:", path, "loop:", backVideoPlayer.loops, "fillMode:", fillMode)
+
+        // Set source - this will trigger onStatusChanged
+        backVideoPlayer.source = path
+        
+        console.debug("Background video source set. Loops:", backVideoPlayer.loops, "FillMode:", fillMode)
     }
 
     function stopBackgroundVideo()

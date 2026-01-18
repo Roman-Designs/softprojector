@@ -116,7 +116,7 @@ bool connect(QString database_file)
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    a.setApplicationName("SoftProjector");
+    a.setApplicationName("SoftProjector 3.0");
 
     QPixmap pixmap(":icons/icons/splash.png");
     QSplashScreen splash(pixmap);

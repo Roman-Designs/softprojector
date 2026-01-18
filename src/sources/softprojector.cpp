@@ -184,65 +184,6 @@ SoftProjector::SoftProjector(QWidget *parent)
     }
     viewMenu->addAction(actionVirtualOutput);
 
-    // Initialize lower third control state
-    lowerThirdVisible = false;
-
-    // Create Stream toolbar with lower third controls
-    streamToolBar = new QToolBar(tr("Stream"), this);
-    streamToolBar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    addToolBar(streamToolBar);
-
-    // Lower third text input
-    QLabel *lowerThirdLabel = new QLabel(tr("Lower Third:"), this);
-    lowerThirdTextEdit = new QLineEdit(this);
-    lowerThirdTextEdit->setPlaceholderText(tr("Enter lower third text..."));
-    lowerThirdTextEdit->setMinimumWidth(200);
-    lowerThirdTextEdit->setMaximumWidth(400);
-
-    // Lower third buttons
-    lowerThirdShowButton = new QPushButton(tr("Show"), this);
-    lowerThirdHideButton = new QPushButton(tr("Hide"), this);
-    lowerThirdClearButton = new QPushButton(tr("Clear"), this);
-
-    // Add widgets to toolbar
-    streamToolBar->addWidget(lowerThirdLabel);
-    streamToolBar->addWidget(lowerThirdTextEdit);
-    streamToolBar->addSeparator();
-    streamToolBar->addAction(ui->actionShow);
-    streamToolBar->addAction(ui->actionHide);
-    streamToolBar->addSeparator();
-    streamToolBar->addWidget(lowerThirdShowButton);
-    streamToolBar->addWidget(lowerThirdHideButton);
-    streamToolBar->addWidget(lowerThirdClearButton);
-
-    // Connect lower third controls
-    connect(lowerThirdTextEdit, SIGNAL(textChanged(const QString&)),
-            this, SLOT(onLowerThirdTextChanged(QString)));
-    connect(lowerThirdShowButton, SIGNAL(clicked()), this, SLOT(showLowerThird()));
-    connect(lowerThirdHideButton, SIGNAL(clicked()), this, SLOT(hideLowerThird()));
-    connect(lowerThirdClearButton, SIGNAL(clicked()), this, SLOT(clearLowerThirdText()));
-
-    // Add lower third menu items under View menu
-    QAction *actionShowLowerThird = new QAction(tr("Show Lower Third"), this);
-    actionShowLowerThird->setShortcut(QKeySequence(Qt::Key_F9));
-    actionShowLowerThird->setStatusTip(tr("Show lower third overlay"));
-    connect(actionShowLowerThird, SIGNAL(triggered()), this, SLOT(showLowerThird()));
-
-    QAction *actionHideLowerThird = new QAction(tr("Hide Lower Third"), this);
-    actionHideLowerThird->setShortcut(QKeySequence(Qt::Key_F10));
-    actionHideLowerThird->setStatusTip(tr("Hide lower third overlay"));
-    connect(actionHideLowerThird, SIGNAL(triggered()), this, SLOT(hideLowerThird()));
-
-    QAction *actionToggleLowerThird = new QAction(tr("Toggle Lower Third"), this);
-    actionToggleLowerThird->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_L));
-    actionToggleLowerThird->setStatusTip(tr("Toggle lower third overlay visibility"));
-    connect(actionToggleLowerThird, SIGNAL(triggered()), this, SLOT(toggleLowerThird()));
-
-    viewMenu->addSeparator();
-    viewMenu->addAction(actionShowLowerThird);
-    viewMenu->addAction(actionHideLowerThird);
-    viewMenu->addAction(actionToggleLowerThird);
-
     // Create and connect shortcuts
     shpgUP = new QShortcut(Qt::Key_PageUp,this);
     shpgDwn = new QShortcut(Qt::Key_PageDown,this);
@@ -299,7 +240,6 @@ SoftProjector::~SoftProjector()
     delete shSart1;
     delete shSart2;
     delete helpDialog;
-    delete lowerThirdTextEdit;
     delete streamToolBar;
     delete ui;
 }
@@ -519,61 +459,7 @@ void SoftProjector::updateVirtualOutputSettings()
                            mySettings.general.virtualOutput.streamThemeId);
 }
 
-void SoftProjector::showLowerThird()
-{
-    QString text = lowerThirdTextEdit->text();
-    if(virtualOutput && virtualOutput->isEnabled())
-    {
-        virtualOutput->showLowerThird(text);
-        lowerThirdVisible = true;
-        statusBar()->showMessage(tr("Lower third shown"), 2000);
-    }
-    else
-    {
-        statusBar()->showMessage(tr("Virtual Output must be enabled to show lower third"), 3000);
-    }
-}
 
-void SoftProjector::hideLowerThird()
-{
-    if(virtualOutput && virtualOutput->isEnabled())
-    {
-        virtualOutput->hideLowerThird();
-        lowerThirdVisible = false;
-        statusBar()->showMessage(tr("Lower third hidden"), 2000);
-    }
-}
-
-void SoftProjector::toggleLowerThird()
-{
-    if(lowerThirdVisible)
-    {
-        hideLowerThird();
-    }
-    else
-    {
-        showLowerThird();
-    }
-}
-
-void SoftProjector::onLowerThirdTextChanged(const QString &text)
-{
-    if(virtualOutput && virtualOutput->isEnabled() && lowerThirdVisible)
-    {
-        virtualOutput->showLowerThird(text);
-    }
-}
-
-void SoftProjector::clearLowerThirdText()
-{
-    lowerThirdTextEdit->clear();
-    if(virtualOutput && virtualOutput->isEnabled() && lowerThirdVisible)
-    {
-        virtualOutput->hideLowerThird();
-        lowerThirdVisible = false;
-    }
-    statusBar()->showMessage(tr("Lower third text cleared"), 2000);
-}
 
 void SoftProjector::saveSettings()
 {

@@ -43,16 +43,8 @@ Rectangle {
     property real logoOpacity: 1.0
     property int logoSize: 120  // width/height for logo
 
-    property string lowerThirdText: ""
-    property color lowerThirdBgColor: "#000000"
-    property color lowerThirdTextColor: "#FFFFFF"
-    property string lowerThirdFont: "Arial"
-    property int lowerThirdFontSize: 32
-    property real lowerThirdHeight: 80  // height of lower third bar
-
     // Overlay visibility flags
     property bool logoVisible: false
-    property bool lowerThirdVisible: false
 
     // Video playback signals
     signal positionChanged(int position)
@@ -161,87 +153,6 @@ Rectangle {
     }
 
     // ========== Lower Third Overlay Layer ==========
-    Rectangle {
-        id: lowerThirdContainer
-        objectName: "lowerThirdContainer"
-        width: parent.width
-        height: lowerThirdHeight
-        color: lowerThirdBgColor
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        z: 100
-        opacity: 0.0
-        y: parent.height  // Start below screen
-
-        // Lower third background bar
-        Rectangle {
-            id: lowerThirdBg
-            anchors.fill: parent
-            color: lowerThirdBgColor
-        }
-
-        // Text content
-        Text {
-            id: lowerThirdTextItem
-            objectName: "lowerThirdText"
-            anchors.fill: parent
-            anchors.leftMargin: 20
-            anchors.rightMargin: 20
-            anchors.topMargin: 15
-            anchors.bottomMargin: 15
-            text: lowerThirdText
-            color: lowerThirdTextColor
-            font.family: lowerThirdFont
-            font.pixelSize: lowerThirdFontSize
-            font.bold: true
-            verticalAlignment: Text.AlignVCenter
-            horizontalAlignment: Text.AlignLeft
-            wrapMode: Text.Truncate
-            elide: Text.ElideRight
-        }
-
-        // Slide-up animation (show)
-        NumberAnimation {
-            id: lowerThirdSlideUp
-            target: lowerThirdContainer
-            property: "y"
-            to: parent.height - lowerThirdHeight
-            duration: tranTime
-            easing.type: Easing.OutQuad
-        }
-
-        // Fade-in animation (accompanying slide-up)
-        NumberAnimation {
-            id: lowerThirdFadeIn
-            target: lowerThirdContainer
-            property: "opacity"
-            to: 1.0
-            duration: tranTime * 0.7
-            easing.type: Easing.InOutQuad
-        }
-
-        // Slide-down animation (hide)
-        NumberAnimation {
-            id: lowerThirdSlideDown
-            target: lowerThirdContainer
-            property: "y"
-            to: parent.height
-            duration: tranTime
-            easing.type: Easing.InQuad
-        }
-
-        // Fade-out animation (accompanying slide-down)
-        NumberAnimation {
-            id: lowerThirdFadeOut
-            target: lowerThirdContainer
-            property: "opacity"
-            to: 0.0
-            duration: tranTime * 0.7
-            easing.type: Easing.InOutQuad
-        }
-    }
-
     // ========== Content Transition Animations ==========
 
     // Fade transitions for text content
@@ -662,77 +573,4 @@ Rectangle {
         logoContainer.opacity = opacity
     }
 
-    // ========== Lower Third Overlay Functions ==========
-
-    /**
-     * Show the lower third overlay with slide-up and fade-in animations
-     * @param text - Text content to display
-     * @param bgColor - Background color (hex string, e.g., "#FF0000")
-     * @param textColor - Text color (hex string)
-     * @param fontSize - Font size in pixels
-     */
-    function showLowerThird(text, bgColor, textColor, fontSize) {
-        lowerThirdText = text
-        if (bgColor) lowerThirdBgColor = bgColor
-        if (textColor) lowerThirdTextColor = textColor
-        if (fontSize) lowerThirdFontSize = fontSize
-
-        // Stop any existing animations
-        lowerThirdSlideDown.stop()
-        lowerThirdFadeOut.stop()
-
-        // Start slide-up and fade-in together
-        lowerThirdContainer.y = parent.height
-        lowerThirdContainer.opacity = 0.0
-        lowerThirdSlideUp.start()
-        lowerThirdFadeIn.start()
-    }
-
-    /**
-     * Hide the lower third overlay with slide-down and fade-out animations
-     */
-    function hideLowerThird() {
-        lowerThirdSlideUp.stop()
-        lowerThirdFadeIn.stop()
-        lowerThirdSlideDown.start()
-        lowerThirdFadeOut.start()
-    }
-
-    /**
-     * Update lower third text without showing/hiding
-     */
-    function updateLowerThirdText(text) {
-        lowerThirdText = text
-    }
-
-    /**
-     * Set lower third properties and show immediately (no animation)
-     */
-    function setLowerThirdImmediate(text, bgColor, textColor, fontSize) {
-        lowerThirdText = text
-        if (bgColor) lowerThirdBgColor = bgColor
-        if (textColor) lowerThirdTextColor = textColor
-        if (fontSize) lowerThirdFontSize = fontSize
-
-        lowerThirdSlideUp.stop()
-        lowerThirdSlideDown.stop()
-        lowerThirdFadeIn.stop()
-        lowerThirdFadeOut.stop()
-
-        lowerThirdContainer.y = parent.height - lowerThirdHeight
-        lowerThirdContainer.opacity = 1.0
-    }
-
-    /**
-     * Quickly hide lower third (no animation, instant cut)
-     */
-    function hideLowerThirdImmediate() {
-        lowerThirdSlideUp.stop()
-        lowerThirdSlideDown.stop()
-        lowerThirdFadeIn.stop()
-        lowerThirdFadeOut.stop()
-
-        lowerThirdContainer.y = parent.height
-        lowerThirdContainer.opacity = 0.0
-    }
 }

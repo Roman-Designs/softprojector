@@ -86,12 +86,7 @@ public:
     MediaWidget *mediaPlayer;
     MediaControl *mediaControls;
     VirtualOutput *virtualOutput;
-    QLineEdit *lowerThirdTextEdit;
-    QPushButton *lowerThirdShowButton;
-    QPushButton *lowerThirdHideButton;
-    QPushButton *lowerThirdClearButton;
     QToolBar *streamToolBar;
-    bool lowerThirdVisible;
 
     bool showing; // whether we are currently showing to the projector
     Song current_song;
@@ -121,12 +116,6 @@ private slots:
     void setupVirtualOutput();
     void updateVirtualOutputSettings();
     void showDisplayScreen(bool show);
-
-    void showLowerThird();
-    void hideLowerThird();
-    void toggleLowerThird();
-    void onLowerThirdTextChanged(const QString &text);
-    void clearLowerThirdText();
 
     void applySetting(GeneralSettings &g, Theme &t, SlideShowSettings &s,
                       BibleVersionSettings &b1, BibleVersionSettings &b2,
