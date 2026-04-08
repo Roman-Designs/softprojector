@@ -165,7 +165,7 @@ SoftProjector::SoftProjector(QWidget *parent)
     // Add Virtual Output menu item under View menu
     QAction *actionVirtualOutput = new QAction(tr("Virtual Output"), this);
     actionVirtualOutput->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_V));
-    actionVirtualOutput->setStatusTip(tr("Show Virtual Output window for streaming"));
+    actionVirtualOutput->setStatusTip(tr("Toggle the localhost browser source for streaming"));
     connect(actionVirtualOutput, SIGNAL(triggered()), this, SLOT(toggleVirtualOutput()));
 
     // Find or create View menu
@@ -207,6 +207,11 @@ SoftProjector::SoftProjector(QWidget *parent)
             mediaControls,SLOT(setMaximumTime(qint64)));
     connect(pds1,SIGNAL(videoPlaybackStateChanged(QMediaPlayer::State)),
             mediaControls,SLOT(updatePlayerState(QMediaPlayer::State)));
+
+    if(mySettings.general.virtualOutput.enabled)
+    {
+        updateVirtualOutputSettings();
+    }
     connect(pds1,SIGNAL(videoStopped()),this,SLOT(videoStopped()));
     connect(mediaControls,SIGNAL(play()),this,SLOT(playVideo()));
     connect(mediaControls,SIGNAL(pause()),this,SLOT(pauseVideo()));
@@ -413,8 +418,6 @@ void SoftProjector::setupVirtualOutput()
 
     virtualOutput = new VirtualOutput(this);
 
-    virtualOutput->setTheme(true, -1);
-
     qDebug() << "Virtual Output initialized";
 }
 
@@ -440,10 +443,19 @@ void SoftProjector::toggleVirtualOutput()
 
 void SoftProjector::updateVirtualOutputSettings()
 {
+    if(!virtualOutput && !mySettings.general.virtualOutput.enabled)
+        return;
+
+    if(!virtualOutput)
+        setupVirtualOutput();
+
     if(!virtualOutput)
         return;
 
-    virtualOutput->setEnabled(mySettings.general.virtualOutput.enabled);
+    virtualOutput->setTheme(mySettings.general.virtualOutput.mirrorDisplay1,
+                            mySettings.general.virtualOutput.streamThemeId);
+
+    virtualOutput->setLogoOverlay(mySettings.general.virtualOutput.overlayPath);
 
     if(mySettings.general.virtualOutput.width == 1280 && mySettings.general.virtualOutput.height == 720)
         virtualOutput->setResolution(VirtualOutput::RES_720P);
@@ -455,8 +467,25 @@ void SoftProjector::updateVirtualOutputSettings()
         virtualOutput->setCustomResolution(mySettings.general.virtualOutput.width,
                                            mySettings.general.virtualOutput.height);
 
-    virtualOutput->setTheme(mySettings.general.virtualOutput.mirrorDisplay1,
-                           mySettings.general.virtualOutput.streamThemeId);
+    virtualOutput->setEnabled(mySettings.general.virtualOutput.enabled);
+}
+
+Theme SoftProjector::getVirtualOutputTheme()
+{
+    if(mySettings.general.virtualOutput.mirrorDisplay1)
+        return theme;
+
+    Theme customTheme;
+    customTheme.setThemeId(mySettings.general.virtualOutput.streamThemeId);
+    customTheme.loadTheme();
+    if(customTheme.getThemeId() == 0 && mySettings.general.virtualOutput.streamThemeId != 0)
+        return theme;
+
+    customTheme.bible.versions = mySettings.bibleSets;
+    customTheme.bible2.versions = mySettings.bibleSets2;
+    customTheme.bible3.versions = mySettings.bibleSets3;
+    customTheme.bible4.versions = mySettings.bibleSets4;
+    return customTheme;
 }
 
 
@@ -528,6 +557,8 @@ void SoftProjector::updateSetting(GeneralSettings &g, Theme &t, SlideShowSetting
         pds4->setFormatSettings(mySettings.general.screenFormat[3]);
         positionDisplayWindow();
     }
+
+    updateVirtualOutputSettings();
 }
 
 void SoftProjector::applySetting(GeneralSettings &g, Theme &t, SlideShowSettings &s,
@@ -800,6 +831,10 @@ void SoftProjector::playVideo()
     {
         pds4->playVideo();
     }
+    if(virtualOutput && virtualOutput->isEnabled())
+    {
+        virtualOutput->playVideo();
+    }
 }
 
 void SoftProjector::pauseVideo()
@@ -816,6 +851,10 @@ void SoftProjector::pauseVideo()
     if(hasDisplayScreen4)
     {
         pds4->pauseVideo();
+    }
+    if(virtualOutput && virtualOutput->isEnabled())
+    {
+        virtualOutput->pauseVideo();
     }
 }
 
@@ -834,6 +873,10 @@ void SoftProjector::stopVideo()
     {
         pds4->stopVideo();
     }
+    if(virtualOutput && virtualOutput->isEnabled())
+    {
+        virtualOutput->stopVideo();
+    }
 }
 
 void SoftProjector::setVideoPosition(qint64 position)
@@ -850,6 +893,10 @@ void SoftProjector::setVideoPosition(qint64 position)
     if(hasDisplayScreen4)
     {
         pds4->setVideoPosition(position);
+    }
+    if(virtualOutput && virtualOutput->isEnabled())
+    {
+        virtualOutput->setVideoPosition(position);
     }
 }
 
@@ -929,7 +976,10 @@ void SoftProjector::updateScreen()
         // Update virtual output if enabled
         if(virtualOutput && virtualOutput->isEnabled())
         {
-            virtualOutput->renderPassiveText(theme.passive.backgroundPix,theme.passive.useBackground, theme.passive);
+            Theme virtualTheme = getVirtualOutputTheme();
+            virtualOutput->renderPassiveText(virtualTheme.passive.backgroundPix,
+                                             virtualTheme.passive.useBackground,
+                                             virtualTheme.passive);
         }
 
         stopVideo();
@@ -1053,9 +1103,10 @@ void SoftProjector::showBible()
     // Update virtual output if enabled
     if(virtualOutput && virtualOutput->isEnabled())
     {
+        Theme virtualTheme = getVirtualOutputTheme();
         virtualOutput->renderBibleText(bibleWidget->bible.getCurrentVerseAndCaption(
-                                           currentRows,theme.bible,mySettings.bibleSets),
-                                       theme.bible);
+                                           currentRows,virtualTheme.bible,mySettings.bibleSets),
+                                       virtualTheme.bible);
     }
 }
 
@@ -1114,7 +1165,13 @@ void SoftProjector::showSong(int currentRow)
     // Update virtual output if enabled
     if(virtualOutput && virtualOutput->isEnabled())
     {
-        virtualOutput->renderSongText(current_song.getStanza(currentRow),s1);
+        Theme virtualTheme = getVirtualOutputTheme();
+        SongSettings virtualSong = virtualTheme.song;
+        if(current_song.usePrivateSettings)
+        {
+            current_song.getSettings(virtualSong);
+        }
+        virtualOutput->renderSongText(current_song.getStanza(currentRow),virtualSong);
     }
 
 }
@@ -1159,7 +1216,8 @@ void SoftProjector::showAnnounce(int currentRow)
     // Update virtual output if enabled
     if(virtualOutput && virtualOutput->isEnabled())
     {
-        virtualOutput->renderAnnounceText(currentAnnounce.getAnnounceSlide(currentRow),theme.announce);
+        Theme virtualTheme = getVirtualOutputTheme();
+        virtualOutput->renderAnnounceText(currentAnnounce.getAnnounceSlide(currentRow),virtualTheme.announce);
     }
 }
 

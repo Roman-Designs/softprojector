@@ -230,6 +230,7 @@ protected:
     void keyPressEvent(QKeyEvent *event);
 
 private:
+    Theme getVirtualOutputTheme();
     Ui::SoftProjectorClass *ui;
     SettingsDialog *settingsDialog;
     HelpDialog *helpDialog;

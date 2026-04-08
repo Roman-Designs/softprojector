@@ -103,4 +103,9 @@
     <qresource prefix="/qml">
         <file>qml/DisplayArea.qml</file>
     </qresource>
+    <qresource prefix="/web">
+        <file>web/virtualoutput.html</file>
+        <file>web/virtualoutput.js</file>
+        <file>web/virtualoutput.css</file>
+    </qresource>
 </RCC>

@@ -29,6 +29,7 @@ VirtualOutputSettingWidget::VirtualOutputSettingWidget(QWidget *parent) :
     updateCustomResolutionVisibility();
     updateThemeComboState();
     updateFontPreview();
+    updateBrowserUrl();
     updateColorPreview(ui->graphicsViewLowerThirdBgColor, QColor(0, 0, 0));
     updateColorPreview(ui->graphicsViewLowerThirdTextColor, QColor(255, 255, 255));
 
@@ -92,6 +93,7 @@ void VirtualOutputSettingWidget::loadSettings()
     ui->lineEditOverlayPath->setText(m_settings.overlayPath);
 
     ui->checkBoxAlwaysOnTop->setChecked(m_settings.displayIsOnTop);
+    updateBrowserUrl();
 
     updateCustomResolutionVisibility();
     updateThemeComboState();
@@ -177,6 +179,11 @@ void VirtualOutputSettingWidget::updateFontPreview()
     QFont font = ui->fontComboBoxLowerThird->currentFont();
     ui->labelLowerThirdFontPreview->setFont(font);
     ui->labelLowerThirdFontPreview->setText(getFontText(font));
+}
+
+void VirtualOutputSettingWidget::updateBrowserUrl()
+{
+    ui->lineEditBrowserUrl->setText(VirtualOutput::browserUrl());
 }
 
 void VirtualOutputSettingWidget::updateCustomResolutionVisibility()
@@ -309,4 +316,10 @@ void VirtualOutputSettingWidget::on_fontComboBoxLowerThird_currentFontChanged(co
 void VirtualOutputSettingWidget::on_pushButtonPreview_clicked()
 {
     emit previewRequested();
+}
+
+void VirtualOutputSettingWidget::on_toolButtonCopyBrowserUrl_clicked()
+{
+    ui->lineEditBrowserUrl->selectAll();
+    QGuiApplication::clipboard()->setText(ui->lineEditBrowserUrl->text());
 }

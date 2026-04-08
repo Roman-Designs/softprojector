@@ -20,15 +20,17 @@
 #ifndef VIRTUALOUTPUT_HPP
 #define VIRTUALOUTPUT_HPP
 
-#include <QWindow>
-#include <QQuickView>
-#include <QQuickItem>
-#include <QtQml>
-#include <QMediaPlayer>
-#include <QSize>
-#include <QString>
+#include <QObject>
 #include <QColor>
-#include "spimageprovider.hpp"
+#include <QFont>
+#include <QPixmap>
+#include <QSet>
+#include <QTcpServer>
+#include <QTcpSocket>
+#include <QMediaPlayer>
+#include <QUrl>
+#include <QtWebSockets/QWebSocket>
+#include <QtWebSockets/QWebSocketServer>
 #include "imagegenerator.hpp"
 #include "settings.hpp"
 #include "bible.hpp"
@@ -36,61 +38,46 @@
 #include "announcement.hpp"
 #include "videoinfo.hpp"
 
-/**
- * @brief The VirtualOutput class manages a separate streaming/output window
- *
- * This class creates and manages a virtual output window that can be captured
- * by streaming software like OBS. It supports:
- * - Configurable resolution (720p, 1080p, custom)
- * - Independent theme or mirror of Display 1
- * - Overlay layers (logo, lower third graphics)
- * - QML-based rendering for consistency with main display
- */
 class VirtualOutput : public QObject
 {
     Q_OBJECT
 
 public:
-    /**
-     * @brief Resolution presets for virtual output
-     */
     enum ResolutionPreset
     {
-        RES_720P,      // 1280x720
-        RES_1080P,     // 1920x1080
-        RES_1440P,     // 2560x1440
-        RES_CUSTOM     // User-defined
+        RES_720P,
+        RES_1080P,
+        RES_1440P,
+        RES_CUSTOM
     };
 
     explicit VirtualOutput(QObject *parent = nullptr);
     ~VirtualOutput();
 
-    // Initialization and control
     bool initialize();
     void setEnabled(bool enabled);
     bool isEnabled() const { return m_enabled; }
 
-    // Resolution configuration
     void setResolution(ResolutionPreset preset);
     void setCustomResolution(int width, int height);
     QSize getResolution() const { return m_resolution; }
 
-    // Theme configuration
     void setTheme(bool mirrorDisplay1, int themeId = -1);
     bool isMirroringDisplay1() const { return m_mirrorDisplay1; }
     int getThemeId() const { return m_themeId; }
 
-    // Overlay configuration
     void setLogoOverlay(const QString &imagePath);
     void setLowerThirdConfig(bool show, const QString &text, const QFont &font,
-                            const QColor &bgColor, const QColor &textColor);
+                             const QColor &bgColor, const QColor &textColor);
 
-    // Display update methods
     void updateDisplay();
     void renderNotText();
 
+    static quint16 httpPort();
+    static quint16 websocketPort();
+    static QString browserUrl();
+
 public slots:
-    // Render content from main display
     void renderPassiveText(QPixmap &background, bool useBackground, TextSettings &pSets);
     void renderBibleText(Verse verse, BibleSettings &settings);
     void renderSongText(Stanza stanza, SongSettings &settings);
@@ -98,13 +85,11 @@ public slots:
     void renderSlideShow(QPixmap slide, SlideShowSettings &settings);
     void renderVideo(VideoInfo videoDetails);
 
-    // Video background control
     void setBackgroundVideo(const QString &path, bool loop, int fillMode);
     void stopBackgroundVideo();
     void pauseBackgroundVideo();
     void resumeBackgroundVideo();
 
-    // Video playback control
     void playVideo();
     void pauseVideo();
     void stopVideo();
@@ -112,80 +97,108 @@ public slots:
     void setVideoMuted(bool muted);
     void setVideoPosition(qint64 position);
 
-    // Display control positioning
     void positionControls(DisplayControlsSettings &settings);
     void setControlsVisible(bool visible);
 
 signals:
-    // State change signals
     void enabledChanged(bool enabled);
     void resolutionChanged(QSize newResolution);
     void themeChanged(bool isMirror, int themeId);
 
-    // Display control signals
     void exitSlide();
     void nextSlide();
     void prevSlide();
 
-    // Video control signals
     void videoPositionChanged(qint64 position);
     void videoDurationChanged(qint64 duration);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     void videoPlaybackStateChanged(QMediaPlayer::PlaybackState state);
+#else
+    void videoPlaybackStateChanged(QMediaPlayer::State state);
+#endif
     void videoStopped();
 
 protected:
     void keyReleaseEvent(QKeyEvent *event);
 
 private slots:
-    // Internal QML rendering slots
-    void setBackPixmap(QPixmap pixmap, int fillMode);
-    void setBackPixmap(QPixmap pixmap, QColor color);
-    void setTextPixmap(QPixmap pixmap);
-    void setBackVideo(QString path);
-    void setVideoSource(QObject *playerObject, QUrl path);
-
-    // Control signals from QML
-    void exitSlideClicked();
-    void nextSlideClicked();
-    void prevSlideClicked();
-
-    // Video player signals
-    void videoPositionChanged(int position);
-    void videoDurationChanged(int duration);
-    void videoPlaybackStateChanged(int state);
-    void playbackStopped();
+    void onNewHttpConnection();
+    void onSocketReadyRead();
+    void onSocketDisconnected();
+    void onNewWebSocketConnection();
+    void onWebSocketDisconnected();
 
 private:
-    // Helper methods
-    void createWindow();
-    void loadQmlView();
-    void connectSignals();
-    void updateWindowSize();
+    struct AssetState
+    {
+        QByteArray data;
+        QString contentType;
+        quint64 version;
+        bool available;
 
-    // Configuration members
+        AssetState() : version(0), available(false) {}
+    };
+
+    bool startServers();
+    void stopServers();
+    void resetHttpSocket(QTcpSocket *socket);
+    void handleHttpRequest(QTcpSocket *socket, const QByteArray &requestData);
+    void sendHttpResponse(QTcpSocket *socket, const QByteArray &statusLine,
+                          const QByteArray &contentType, const QByteArray &body,
+                          const QList<QByteArray> &extraHeaders = QList<QByteArray>(),
+                          bool sendBody = true, qint64 contentLength = -1);
+    void sendImageResponse(QTcpSocket *socket, const AssetState &asset, bool sendBody);
+    void sendMediaResponse(QTcpSocket *socket, const QString &filePath, bool sendBody,
+                           const QByteArray &rangeHeader = QByteArray());
+    void sendNotFound(QTcpSocket *socket);
+    void sendMethodNotAllowed(QTcpSocket *socket);
+    void sendBadRequest(QTcpSocket *socket);
+
+    void broadcastState();
+    void sendState(QWebSocket *socket);
+    QByteArray buildStateMessage() const;
+
+    void setTransition(int transitionType);
+    void setBackPixmap(const QPixmap &pixmap, int fillMode);
+    void setTextPixmap(const QPixmap &pixmap);
+    void clearMainVideo();
+    void updateOverlayAsset();
+
+    QByteArray pixmapToPng(const QPixmap &pixmap) const;
+    QString contentTypeForFile(const QString &path) const;
+    QString localFilePath(const QUrl &url) const;
+
     bool m_enabled;
+    bool m_initialized;
     bool m_mirrorDisplay1;
     int m_themeId;
     ResolutionPreset m_resolutionPreset;
     QSize m_resolution;
 
-    // Overlay configuration
     QString m_logoImagePath;
-
-    // QML and rendering components
-    QQuickView *m_window;
-    SpImageProvider *m_imageProvider;
+    QTcpServer *m_httpServer;
+    QWebSocketServer *m_webSocketServer;
+    QSet<QWebSocket*> m_clients;
+    QSet<QTcpSocket*> m_httpSockets;
     ImageGenerator m_imageGenerator;
 
-    // State tracking for alternating buffers (like ProjectorDisplayScreen)
-    bool m_backImSwitch1, m_backImSwitch2;
-    bool m_textImSwitch1, m_textImSwitch2;
-    bool m_isNewBackground;
-    bool m_back1to2, m_text1to2;
-    QPixmap m_currentBackground;
-    QColor m_currentColor;
-    QString m_currentBackgroundVideoPath;
-    int m_backType;
+    AssetState m_backgroundImage;
+    AssetState m_textImage;
+    AssetState m_overlayImage;
+    quint64 m_mediaVersion;
+    int m_transitionType;
+
+    QString m_backgroundVideoPath;
+    bool m_backgroundVideoLoop;
+    int m_backgroundVideoFillMode;
+    bool m_backgroundVideoPaused;
+
+    QString m_mainVideoPath;
+    bool m_mainVideoPaused;
+    qint64 m_mainVideoPosition;
+    int m_mainVideoVolume;
+    bool m_mainVideoMuted;
+    QColor m_color;
 };
 
 #endif // VIRTUALOUTPUT_HPP

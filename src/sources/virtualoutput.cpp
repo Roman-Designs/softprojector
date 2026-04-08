@@ -18,168 +18,179 @@
 ***************************************************************************/
 
 #include "../headers/virtualoutput.hpp"
-#include <QQmlEngine>
-#include <QQmlContext>
+
+#include <QBuffer>
 #include <QDebug>
+#include <QFile>
+#include <QFileInfo>
+#include <QHostAddress>
+#include <QImage>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QKeyEvent>
+#include <QMimeDatabase>
+#include <QTextStream>
+#include <QUrl>
+
+namespace
+{
+const quint16 kVirtualOutputHttpPort = 15171;
+const quint16 kVirtualOutputWebSocketPort = 15172;
+const char *kVirtualOutputPage = ":/web/virtualoutput.html";
+const char *kVirtualOutputScript = ":/web/virtualoutput.js";
+const char *kVirtualOutputStyle = ":/web/virtualoutput.css";
+}
 
 VirtualOutput::VirtualOutput(QObject *parent)
-     : QObject(parent),
-       m_enabled(false),
-       m_mirrorDisplay1(true),
-       m_themeId(-1),
-       m_resolutionPreset(RES_1080P),
-       m_resolution(1920, 1080),
-       m_window(nullptr),
-       m_imageProvider(nullptr),
-       m_backImSwitch1(false),
-       m_backImSwitch2(false),
-       m_textImSwitch1(false),
-       m_textImSwitch2(false),
-       m_isNewBackground(false),
-       m_back1to2(true),
-       m_text1to2(true),
-       m_backType(B_NONE)
+    : QObject(parent),
+      m_enabled(false),
+      m_initialized(false),
+      m_mirrorDisplay1(true),
+      m_themeId(-1),
+      m_resolutionPreset(RES_1080P),
+      m_resolution(1920, 1080),
+      m_httpServer(nullptr),
+      m_webSocketServer(nullptr),
+      m_mediaVersion(0),
+      m_transitionType(TR_NONE),
+      m_backgroundVideoLoop(true),
+      m_backgroundVideoFillMode(0),
+      m_backgroundVideoPaused(false),
+      m_mainVideoPaused(true),
+      m_mainVideoPosition(0),
+      m_mainVideoVolume(100),
+      m_mainVideoMuted(false)
 {
-    m_currentColor.setRgb(0, 0, 0, 0);
+    m_color.setRgb(0, 0, 0, 0);
+    m_imageGenerator.setScreenSize(m_resolution);
 }
 
 VirtualOutput::~VirtualOutput()
 {
-    if (m_window)
-    {
-        delete m_window;
-        m_window = nullptr;
-    }
+    stopServers();
+}
 
-    m_imageProvider = nullptr; // Will be deleted by QML engine
+quint16 VirtualOutput::httpPort()
+{
+    return kVirtualOutputHttpPort;
+}
+
+quint16 VirtualOutput::websocketPort()
+{
+    return kVirtualOutputWebSocketPort;
+}
+
+QString VirtualOutput::browserUrl()
+{
+    return QString("http://127.0.0.1:%1/").arg(httpPort());
 }
 
 bool VirtualOutput::initialize()
 {
-    try
-    {
-        createWindow();
-        loadQmlView();
-        connectSignals();
-
-        qDebug() << "VirtualOutput initialized successfully with resolution:"
-                 << m_resolution.width() << "x" << m_resolution.height();
+    if (m_initialized && m_httpServer && m_webSocketServer) {
         return true;
     }
-    catch (const std::exception &e)
-    {
-        qWarning() << "Failed to initialize VirtualOutput:" << e.what();
+
+    m_imageGenerator.setScreenSize(m_resolution);
+    m_initialized = startServers();
+    if (m_initialized) {
+        qDebug() << "VirtualOutput browser source ready at" << browserUrl();
+    }
+    return m_initialized;
+}
+
+bool VirtualOutput::startServers()
+{
+    stopServers();
+
+    m_httpServer = new QTcpServer(this);
+    connect(m_httpServer, SIGNAL(newConnection()), this, SLOT(onNewHttpConnection()));
+
+    if (!m_httpServer->listen(QHostAddress::LocalHost, httpPort())) {
+        qWarning() << "Failed to start virtual output HTTP server:" << m_httpServer->errorString();
+        delete m_httpServer;
+        m_httpServer = nullptr;
         return false;
     }
-}
 
-void VirtualOutput::createWindow()
-{
-    if (m_window)
-    {
-        return; // Already created
+    m_webSocketServer = new QWebSocketServer(QStringLiteral("softProjector Virtual Output"),
+                                             QWebSocketServer::NonSecureMode, this);
+    connect(m_webSocketServer, SIGNAL(newConnection()), this, SLOT(onNewWebSocketConnection()));
+
+    if (!m_webSocketServer->listen(QHostAddress::LocalHost, websocketPort())) {
+        qWarning() << "Failed to start virtual output WebSocket server:" << m_webSocketServer->errorString();
+        m_httpServer->close();
+        delete m_httpServer;
+        m_httpServer = nullptr;
+        delete m_webSocketServer;
+        m_webSocketServer = nullptr;
+        return false;
     }
 
-    m_window = new QQuickView;
-
-    // Set window properties for capturing by OBS
-    m_window->setTitle("SoftProjector Virtual Output");
-    m_window->setGeometry(0, 0, m_resolution.width(), m_resolution.height());
-    m_window->setMinimumSize(m_resolution);
-    m_window->setMaximumSize(m_resolution);
-
-    // Create and register image provider
-    m_imageProvider = new SpImageProvider;
-    m_window->engine()->addImageProvider(QLatin1String("improvider"), m_imageProvider);
-
-    // Set black background by default
-    m_window->setColor(QColor(0, 0, 0));
+    return true;
 }
 
-void VirtualOutput::loadQmlView()
+void VirtualOutput::stopServers()
 {
-    if (!m_window)
-    {
-        throw std::runtime_error("Window not created");
-    }
-
-    // Load the VirtualDisplayArea.qml file
-    // This file will be created in Phase 1.2
-    m_window->setSource(QUrl("qrc:/qml/qml/VirtualDisplayArea.qml"));
-
-    if (m_window->status() == QQuickView::Error)
-    {
-        QStringList errors;
-        for (const auto &error : m_window->errors())
-        {
-            errors << error.toString();
+    foreach (QWebSocket *client, m_clients) {
+        if (client) {
+            client->close();
+            client->deleteLater();
         }
-        throw std::runtime_error("Failed to load VirtualDisplayArea.qml: " + errors.join("; ").toStdString());
     }
-}
+    m_clients.clear();
 
-void VirtualOutput::connectSignals()
-{
-    if (!m_window)
-    {
-        throw std::runtime_error("Window not created");
+    foreach (QTcpSocket *socket, m_httpSockets) {
+        if (socket) {
+            socket->disconnect(this);
+            socket->close();
+            socket->deleteLater();
+        }
+    }
+    m_httpSockets.clear();
+
+    if (m_httpServer) {
+        m_httpServer->close();
+        m_httpServer->deleteLater();
+        m_httpServer = nullptr;
     }
 
-    QObject *rootObject = m_window->rootObject();
-    if (!rootObject)
-    {
-        throw std::runtime_error("Failed to get QML root object");
+    if (m_webSocketServer) {
+        m_webSocketServer->close();
+        m_webSocketServer->deleteLater();
+        m_webSocketServer = nullptr;
     }
 
-    // Connect display control signals from QML
-    connect(rootObject, SIGNAL(exitClicked()), this, SLOT(exitSlideClicked()));
-    connect(rootObject, SIGNAL(nextClicked()), this, SLOT(nextSlideClicked()));
-    connect(rootObject, SIGNAL(prevClicked()), this, SLOT(prevSlideClicked()));
-
-    // Connect video player signals from QML
-    connect(rootObject, SIGNAL(positionChanged(int)), this, SLOT(videoPositionChanged(int)));
-    connect(rootObject, SIGNAL(durationChanged(int)), this, SLOT(videoDurationChanged(int)));
-    connect(rootObject, SIGNAL(playbackStateChanged(int)), this, SLOT(videoPlaybackStateChanged(int)));
-    connect(rootObject, SIGNAL(playbackStopped()), this, SLOT(playbackStopped()));
-
-    // Connect our rendering slots
-    connect(this, SIGNAL(updateDisplay()), this, SLOT(updateDisplay()), Qt::QueuedConnection);
+    m_initialized = false;
 }
 
 void VirtualOutput::setEnabled(bool enabled)
 {
-    if (m_enabled == enabled)
-    {
+    if (m_enabled == enabled) {
         return;
     }
 
+    if (enabled) {
+        if (!initialize()) {
+            return;
+        }
+    } else {
+        stopServers();
+    }
+
     m_enabled = enabled;
-
-    if (m_enabled)
-    {
-        if (!m_window)
-        {
-            initialize();
-        }
-        m_window->show();
-    }
-    else
-    {
-        if (m_window)
-        {
-            m_window->hide();
-        }
-    }
-
     emit enabledChanged(m_enabled);
+
+    if (m_enabled) {
+        broadcastState();
+    }
 }
 
 void VirtualOutput::setResolution(ResolutionPreset preset)
 {
     m_resolutionPreset = preset;
 
-    switch (preset)
-    {
+    switch (preset) {
     case RES_720P:
         m_resolution = QSize(1280, 720);
         break;
@@ -190,460 +201,767 @@ void VirtualOutput::setResolution(ResolutionPreset preset)
         m_resolution = QSize(2560, 1440);
         break;
     case RES_CUSTOM:
-        // Resolution should be set via setCustomResolution
         break;
     }
 
-    updateWindowSize();
     m_imageGenerator.setScreenSize(m_resolution);
-
     emit resolutionChanged(m_resolution);
+    broadcastState();
 }
 
 void VirtualOutput::setCustomResolution(int width, int height)
 {
     m_resolutionPreset = RES_CUSTOM;
     m_resolution = QSize(width, height);
-
-    updateWindowSize();
     m_imageGenerator.setScreenSize(m_resolution);
-
     emit resolutionChanged(m_resolution);
+    broadcastState();
 }
 
 void VirtualOutput::setTheme(bool mirrorDisplay1, int themeId)
 {
     m_mirrorDisplay1 = mirrorDisplay1;
     m_themeId = themeId;
-
     emit themeChanged(m_mirrorDisplay1, m_themeId);
-
-    qDebug() << "VirtualOutput theme changed - Mirror Display 1:" << m_mirrorDisplay1
-             << "Theme ID:" << m_themeId;
 }
 
 void VirtualOutput::setLogoOverlay(const QString &imagePath)
 {
     m_logoImagePath = imagePath;
+    updateOverlayAsset();
+    broadcastState();
+}
 
-    if (m_window && m_window->rootObject())
-    {
-        QObject *rootObject = m_window->rootObject();
-        QMetaObject::invokeMethod(rootObject, "setLogoOverlay", Q_ARG(QString, imagePath));
-    }
-
-    qDebug() << "VirtualOutput logo overlay set to:" << imagePath;
+void VirtualOutput::setLowerThirdConfig(bool show, const QString &text, const QFont &font,
+                                        const QColor &bgColor, const QColor &textColor)
+{
+    Q_UNUSED(show)
+    Q_UNUSED(text)
+    Q_UNUSED(font)
+    Q_UNUSED(bgColor)
+    Q_UNUSED(textColor)
 }
 
 void VirtualOutput::updateDisplay()
 {
-    if (!m_enabled || !m_window)
-    {
-        return;
-    }
-
-    // This is called to refresh the display
-    // The actual rendering happens through the render*Text slots
+    broadcastState();
 }
 
 void VirtualOutput::renderNotText()
 {
-    if (!m_enabled || !m_window || !m_imageProvider)
-    {
+    if (!m_enabled) {
         return;
     }
 
-    // Clear the display (render black)
-    QPixmap blackPixmap(m_resolution);
-    blackPixmap.fill(Qt::black);
-    m_imageProvider->setPixMap(blackPixmap);
+    setTransition(TR_NONE);
+    setTextPixmap(m_imageGenerator.generateEmptyImage());
+    clearMainVideo();
+    updateDisplay();
+}
+
+void VirtualOutput::setTransition(int transitionType)
+{
+    m_transitionType = transitionType;
+}
+
+void VirtualOutput::setBackPixmap(const QPixmap &pixmap, int fillMode)
+{
+    QPixmap scaled = pixmap;
+
+    switch (fillMode) {
+    case 0:
+        scaled = pixmap.scaled(m_resolution, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        break;
+    case 1:
+        scaled = pixmap.scaled(m_resolution, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        break;
+    case 2:
+        scaled = pixmap.scaled(m_resolution, Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
+        break;
+    default:
+        break;
+    }
+
+    m_backgroundImage.data = pixmapToPng(scaled);
+    m_backgroundImage.contentType = QStringLiteral("image/png");
+    m_backgroundImage.available = !m_backgroundImage.data.isEmpty();
+    ++m_backgroundImage.version;
+}
+
+void VirtualOutput::setTextPixmap(const QPixmap &pixmap)
+{
+    m_textImage.data = pixmapToPng(pixmap);
+    m_textImage.contentType = QStringLiteral("image/png");
+    m_textImage.available = !m_textImage.data.isEmpty();
+    ++m_textImage.version;
 }
 
 void VirtualOutput::renderPassiveText(QPixmap &background, bool useBackground, TextSettings &pSets)
 {
-    if (!m_enabled || !m_window || !m_imageProvider)
-    {
+    if (!m_enabled) {
         return;
     }
 
-    if(pSets.backgroundType == B_VIDEO && !pSets.backgroundVideoPath.isEmpty())
-    {
+    setTransition(TR_NONE);
+    setTextPixmap(m_imageGenerator.generateEmptyImage());
+    clearMainVideo();
+
+    if (pSets.backgroundType == B_VIDEO && !pSets.backgroundVideoPath.isEmpty()) {
         setBackgroundVideo(pSets.backgroundVideoPath, pSets.backgroundVideoLoop, pSets.backgroundVideoFillMode);
-        m_backType = B_VIDEO;
-    }
-    else
-    {
+    } else {
         stopBackgroundVideo();
-        if (useBackground && !background.isNull())
-        {
-            setBackPixmap(background, 1); // 1 = keep aspect ratio
-            m_backType = B_PICTURE;
-        }
-        else
-        {
-            setBackPixmap(background, m_currentColor);
-            m_backType = B_NONE;
+        if (useBackground) {
+            setBackPixmap(background, 0);
+        } else {
+            setBackPixmap(m_imageGenerator.generateColorImage(m_color), 0);
         }
     }
+
+    updateDisplay();
 }
 
 void VirtualOutput::renderBibleText(Verse verse, BibleSettings &settings)
 {
-    if (!m_enabled || !m_window || !m_imageProvider)
-    {
+    if (!m_enabled) {
         return;
     }
 
-    // TODO: Phase 1.2+ - Render Bible verse text with settings
-    // This will be implemented after VirtualDisplayArea.qml is created
-    qDebug() << "VirtualOutput rendering Bible text:" << verse.primary_caption;
+    setTransition(settings.useFading ? TR_FADE : TR_NONE);
+    clearMainVideo();
+
+    if (settings.backgroundType == B_VIDEO && !settings.backgroundVideoPath.isEmpty()) {
+        setBackgroundVideo(settings.backgroundVideoPath, settings.backgroundVideoLoop, settings.backgroundVideoFillMode);
+    } else {
+        stopBackgroundVideo();
+        if (settings.useBackground) {
+            setBackPixmap(settings.backgroundPix, 0);
+        } else {
+            setBackPixmap(m_imageGenerator.generateColorImage(m_color), 0);
+        }
+    }
+
+    setTextPixmap(m_imageGenerator.generateBibleImage(verse, settings));
+    updateDisplay();
 }
 
 void VirtualOutput::renderSongText(Stanza stanza, SongSettings &settings)
 {
-    if (!m_enabled || !m_window || !m_imageProvider)
-    {
+    if (!m_enabled) {
         return;
     }
 
-    // TODO: Phase 1.2+ - Render song stanza with settings
-    // This will be implemented after VirtualDisplayArea.qml is created
-    qDebug() << "VirtualOutput rendering song text";
+    setTransition(settings.useFading ? TR_FADE : TR_NONE);
+    clearMainVideo();
+
+    if (settings.backgroundType == B_VIDEO && !settings.backgroundVideoPath.isEmpty()) {
+        setBackgroundVideo(settings.backgroundVideoPath, settings.backgroundVideoLoop, settings.backgroundVideoFillMode);
+    } else {
+        stopBackgroundVideo();
+        if (settings.useBackground) {
+            setBackPixmap(settings.backgroundPix, 0);
+        } else {
+            setBackPixmap(m_imageGenerator.generateColorImage(m_color), 0);
+        }
+    }
+
+    setTextPixmap(m_imageGenerator.generateSongImage(stanza, settings));
+    updateDisplay();
 }
 
 void VirtualOutput::renderAnnounceText(AnnounceSlide announce, TextSettings &settings)
 {
-    if (!m_enabled || !m_window || !m_imageProvider)
-    {
+    if (!m_enabled) {
         return;
     }
 
-    // TODO: Phase 1.2+ - Render announcement with settings
-    // This will be implemented after VirtualDisplayArea.qml is created
-    qDebug() << "VirtualOutput rendering announcement text";
+    setTransition(settings.useFading ? TR_FADE : TR_NONE);
+    clearMainVideo();
+
+    if (settings.backgroundType == B_VIDEO && !settings.backgroundVideoPath.isEmpty()) {
+        setBackgroundVideo(settings.backgroundVideoPath, settings.backgroundVideoLoop, settings.backgroundVideoFillMode);
+    } else {
+        stopBackgroundVideo();
+        if (settings.useBackground) {
+            setBackPixmap(settings.backgroundPix, 0);
+        } else {
+            setBackPixmap(m_imageGenerator.generateColorImage(m_color), 0);
+        }
+    }
+
+    setTextPixmap(m_imageGenerator.generateAnnounceImage(announce, settings));
+    updateDisplay();
 }
 
 void VirtualOutput::renderSlideShow(QPixmap slide, SlideShowSettings &settings)
 {
-    if (!m_enabled || !m_window || !m_imageProvider)
-    {
+    if (!m_enabled) {
         return;
     }
 
-    // TODO: Phase 1.2+ - Render slideshow
-    // This will be implemented after VirtualDisplayArea.qml is created
-    qDebug() << "VirtualOutput rendering slideshow slide";
+    bool expand = true;
+    if (slide.width() < m_imageGenerator.width() && slide.height() < m_imageGenerator.height()) {
+        expand = settings.expandSmall;
+    }
+
+    setTransition(TR_FADE);
+    stopBackgroundVideo();
+    clearMainVideo();
+    setTextPixmap(m_imageGenerator.generateEmptyImage());
+    setBackPixmap(slide, expand ? settings.fitType + 1 : 3);
+    updateDisplay();
 }
 
 void VirtualOutput::renderVideo(VideoInfo videoDetails)
 {
-    if (!m_enabled || !m_window || !m_imageProvider)
-    {
+    if (!m_enabled) {
         return;
     }
 
-    // TODO: Phase 1.2+ - Set video playback
-    // This will be implemented after VirtualDisplayArea.qml is created
-    qDebug() << "VirtualOutput rendering video:" << videoDetails.fileName;
-}
+    stopBackgroundVideo();
+    setTransition(TR_NONE);
+    setTextPixmap(m_imageGenerator.generateEmptyImage());
+    setBackPixmap(m_imageGenerator.generateColorImage(m_color), 0);
 
-void VirtualOutput::playVideo()
-{
-    if (!m_window || !m_window->rootObject())
-    {
-        return;
+    const QString path = localFilePath(videoDetails.filePath);
+    if (path != m_mainVideoPath) {
+        ++m_mediaVersion;
     }
 
-    QMetaObject::invokeMethod(m_window->rootObject(), "playVideo");
-}
-
-void VirtualOutput::pauseVideo()
-{
-    if (!m_window || !m_window->rootObject())
-    {
-        return;
-    }
-
-    QMetaObject::invokeMethod(m_window->rootObject(), "pauseVideo");
-}
-
-void VirtualOutput::stopVideo()
-{
-    if (!m_window || !m_window->rootObject())
-    {
-        return;
-    }
-
-    QMetaObject::invokeMethod(m_window->rootObject(), "stopVideo");
-}
-
-void VirtualOutput::setVideoVolume(int level)
-{
-    if (!m_window || !m_window->rootObject())
-    {
-        return;
-    }
-
-    QMetaObject::invokeMethod(m_window->rootObject(), "setVideoVolume", Q_ARG(int, level));
-}
-
-void VirtualOutput::setVideoMuted(bool muted)
-{
-    if (!m_window || !m_window->rootObject())
-    {
-        return;
-    }
-
-    QMetaObject::invokeMethod(m_window->rootObject(), "setVideoMuted", Q_ARG(bool, muted));
-}
-
-void VirtualOutput::setVideoPosition(qint64 position)
-{
-    if (!m_window || !m_window->rootObject())
-    {
-        return;
-    }
-
-    QMetaObject::invokeMethod(m_window->rootObject(), "setVideoPosition", Q_ARG(qint64, position));
-}
-
-void VirtualOutput::positionControls(DisplayControlsSettings &settings)
-{
-    if (!m_window || !m_window->rootObject())
-    {
-        return;
-    }
-
-    // TODO: Phase 1.2+ - Position display controls
-    qDebug() << "VirtualOutput positioning controls";
-}
-
-void VirtualOutput::setControlsVisible(bool visible)
-{
-    if (!m_window || !m_window->rootObject())
-    {
-        return;
-    }
-
-    QMetaObject::invokeMethod(m_window->rootObject(), "setControlsVisible", Q_ARG(bool, visible));
-}
-
-void VirtualOutput::updateWindowSize()
-{
-    if (m_window)
-    {
-        m_window->setGeometry(0, 0, m_resolution.width(), m_resolution.height());
-        m_window->setMinimumSize(m_resolution);
-        m_window->setMaximumSize(m_resolution);
-    }
-}
-
-void VirtualOutput::setBackPixmap(QPixmap pixmap, int fillMode)
-{
-    if (!m_imageProvider)
-    {
-        return;
-    }
-
-    // Check if pixmap has changed
-    if (m_currentBackground.cacheKey() == pixmap.cacheKey())
-    {
-        m_isNewBackground = false;
-        return;
-    }
-
-    m_currentBackground = pixmap;
-    m_isNewBackground = true;
-
-    // Apply fill mode scaling
-    switch (fillMode)
-    {
-    case 0:
-        pixmap = pixmap.scaled(m_resolution, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-        break;
-    case 1:
-        pixmap = pixmap.scaled(m_resolution, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        break;
-    case 2:
-        pixmap = pixmap.scaled(m_resolution, Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
-        break;
-    default:
-        // No scaling
-        break;
-    }
-
-    m_imageProvider->setPixMap(pixmap);
-    m_back1to2 = (!m_back1to2);
-
-    // Update the QML image display
-    if (m_window && m_window->rootObject())
-    {
-        QObject *backImage1 = m_window->rootObject()->findChild<QObject *>("backImage1");
-        QObject *backImage2 = m_window->rootObject()->findChild<QObject *>("backImage2");
-
-        if (backImage1 && backImage2)
-        {
-            if (m_back1to2)
-            {
-                backImage2->setProperty("visible", true);
-                backImage1->setProperty("visible", false);
-            }
-            else
-            {
-                backImage1->setProperty("visible", true);
-                backImage2->setProperty("visible", false);
-            }
-        }
-    }
-}
-
-void VirtualOutput::setBackPixmap(QPixmap pixmap, QColor color)
-{
-    setBackPixmap(pixmap, 0); // Use stretch fill mode
-}
-
-void VirtualOutput::setTextPixmap(QPixmap pixmap)
-{
-    if (!m_imageProvider)
-    {
-        return;
-    }
-
-    m_imageProvider->setPixMap(pixmap);
-    m_text1to2 = (!m_text1to2);
-
-    // Update the QML text display
-    if (m_window && m_window->rootObject())
-    {
-        QObject *textImage1 = m_window->rootObject()->findChild<QObject *>("textImage1");
-        QObject *textImage2 = m_window->rootObject()->findChild<QObject *>("textImage2");
-
-        if (textImage1 && textImage2)
-        {
-            if (m_text1to2)
-            {
-                textImage2->setProperty("visible", true);
-                textImage1->setProperty("visible", false);
-            }
-            else
-            {
-                textImage1->setProperty("visible", true);
-                textImage2->setProperty("visible", false);
-            }
-        }
-    }
-}
-
-void VirtualOutput::setBackVideo(QString path)
-{
-    if (!m_window || !m_window->rootObject())
-    {
-        return;
-    }
-
-    QMetaObject::invokeMethod(m_window->rootObject(), "setBackgroundVideo", Q_ARG(QString, path));
-}
-
-void VirtualOutput::setVideoSource(QObject *playerObject, QUrl path)
-{
-    if (!m_window || !m_window->rootObject())
-    {
-        return;
-    }
-
-    QObject *player = m_window->rootObject()->findChild<QObject *>("player");
-    if (player)
-    {
-        player->setProperty("source", path);
-    }
+    m_mainVideoPath = path;
+    m_mainVideoPaused = false;
+    m_mainVideoPosition = 0;
+    updateDisplay();
 }
 
 void VirtualOutput::setBackgroundVideo(const QString &path, bool loop, int fillMode)
 {
-    if(path == m_currentBackgroundVideoPath)
-        return;
-
-    if (!m_window || !m_window->rootObject())
-    {
-        return;
+    const QString localPath = localFilePath(QUrl::fromUserInput(path));
+    if (localPath != m_backgroundVideoPath) {
+        ++m_mediaVersion;
     }
 
-    QMetaObject::invokeMethod(m_window->rootObject(), "setBackgroundVideo",
-                              Q_ARG(QVariant, QVariant(path)),
-                              Q_ARG(QVariant, QVariant(loop)),
-                              Q_ARG(QVariant, QVariant(fillMode)));
-    m_currentBackgroundVideoPath = path;
+    m_backgroundVideoPath = localPath;
+    m_backgroundVideoLoop = loop;
+    m_backgroundVideoFillMode = fillMode;
+    m_backgroundVideoPaused = false;
+    broadcastState();
 }
 
 void VirtualOutput::stopBackgroundVideo()
 {
-    if (!m_window || !m_window->rootObject())
-    {
+    if (m_backgroundVideoPath.isEmpty()) {
         return;
     }
 
-    QMetaObject::invokeMethod(m_window->rootObject(), "stopBackgroundVideo");
-    m_currentBackgroundVideoPath.clear();
+    m_backgroundVideoPath.clear();
+    m_backgroundVideoPaused = false;
+    ++m_mediaVersion;
+    broadcastState();
 }
 
 void VirtualOutput::pauseBackgroundVideo()
 {
-    if (!m_window || !m_window->rootObject())
-    {
+    if (m_backgroundVideoPath.isEmpty()) {
         return;
     }
 
-    QMetaObject::invokeMethod(m_window->rootObject(), "pauseBackgroundVideo");
+    m_backgroundVideoPaused = true;
+    broadcastState();
 }
 
 void VirtualOutput::resumeBackgroundVideo()
 {
-    if (!m_window || !m_window->rootObject())
-    {
+    if (m_backgroundVideoPath.isEmpty()) {
         return;
     }
 
-    QMetaObject::invokeMethod(m_window->rootObject(), "resumeBackgroundVideo");
+    m_backgroundVideoPaused = false;
+    broadcastState();
 }
 
-void VirtualOutput::exitSlideClicked()
+void VirtualOutput::playVideo()
 {
-    emit exitSlide();
+    if (m_mainVideoPath.isEmpty()) {
+        return;
+    }
+
+    m_mainVideoPaused = false;
+    broadcastState();
 }
 
-void VirtualOutput::nextSlideClicked()
+void VirtualOutput::pauseVideo()
 {
-    emit nextSlide();
+    if (m_mainVideoPath.isEmpty()) {
+        return;
+    }
+
+    m_mainVideoPaused = true;
+    broadcastState();
 }
 
-void VirtualOutput::prevSlideClicked()
+void VirtualOutput::stopVideo()
 {
-    emit prevSlide();
+    if (m_mainVideoPath.isEmpty()) {
+        return;
+    }
+
+    m_mainVideoPaused = true;
+    m_mainVideoPosition = 0;
+    broadcastState();
 }
 
-void VirtualOutput::videoPositionChanged(int position)
+void VirtualOutput::setVideoVolume(int level)
 {
-    emit videoPositionChanged(static_cast<qint64>(position));
+    m_mainVideoVolume = level;
+    broadcastState();
 }
 
-void VirtualOutput::videoDurationChanged(int duration)
+void VirtualOutput::setVideoMuted(bool muted)
 {
-    emit videoDurationChanged(static_cast<qint64>(duration));
+    m_mainVideoMuted = muted;
+    broadcastState();
 }
 
-void VirtualOutput::videoPlaybackStateChanged(int state)
+void VirtualOutput::setVideoPosition(qint64 position)
 {
-    emit videoPlaybackStateChanged(static_cast<QMediaPlayer::PlaybackState>(state));
+    if (m_mainVideoPath.isEmpty()) {
+        return;
+    }
+
+    m_mainVideoPosition = position;
+    emit videoPositionChanged(position);
+    broadcastState();
 }
 
-void VirtualOutput::playbackStopped()
+void VirtualOutput::positionControls(DisplayControlsSettings &settings)
 {
-    emit videoStopped();
+    Q_UNUSED(settings)
+}
+
+void VirtualOutput::setControlsVisible(bool visible)
+{
+    Q_UNUSED(visible)
+}
+
+void VirtualOutput::clearMainVideo()
+{
+    if (m_mainVideoPath.isEmpty()) {
+        return;
+    }
+
+    m_mainVideoPath.clear();
+    m_mainVideoPaused = true;
+    m_mainVideoPosition = 0;
+    ++m_mediaVersion;
+}
+
+void VirtualOutput::updateOverlayAsset()
+{
+    m_overlayImage.available = false;
+    m_overlayImage.data.clear();
+    m_overlayImage.contentType.clear();
+    ++m_overlayImage.version;
+
+    if (m_logoImagePath.isEmpty()) {
+        return;
+    }
+
+    QFile file(m_logoImagePath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        return;
+    }
+
+    m_overlayImage.data = file.readAll();
+    m_overlayImage.contentType = contentTypeForFile(m_logoImagePath);
+    if (m_overlayImage.contentType.isEmpty()) {
+        m_overlayImage.contentType = QStringLiteral("application/octet-stream");
+    }
+    m_overlayImage.available = !m_overlayImage.data.isEmpty();
+}
+
+QByteArray VirtualOutput::pixmapToPng(const QPixmap &pixmap) const
+{
+    QByteArray png;
+    QBuffer buffer(&png);
+    buffer.open(QIODevice::WriteOnly);
+    pixmap.save(&buffer, "PNG");
+    return png;
+}
+
+QString VirtualOutput::contentTypeForFile(const QString &path) const
+{
+    QMimeDatabase db;
+    const QMimeType mime = db.mimeTypeForFile(path);
+    return mime.isValid() ? mime.name() : QString();
+}
+
+QString VirtualOutput::localFilePath(const QUrl &url) const
+{
+    if (url.isLocalFile()) {
+        return url.toLocalFile();
+    }
+    if (url.scheme().isEmpty()) {
+        return url.toString();
+    }
+    return url.toLocalFile();
+}
+
+void VirtualOutput::broadcastState()
+{
+    if (!m_enabled) {
+        return;
+    }
+
+    const QByteArray state = buildStateMessage();
+    foreach (QWebSocket *client, m_clients) {
+        if (client && client->isValid()) {
+            client->sendTextMessage(QString::fromUtf8(state));
+        }
+    }
+}
+
+void VirtualOutput::sendState(QWebSocket *socket)
+{
+    if (!socket || !socket->isValid() || !m_enabled) {
+        return;
+    }
+    socket->sendTextMessage(QString::fromUtf8(buildStateMessage()));
+}
+
+QByteArray VirtualOutput::buildStateMessage() const
+{
+    QJsonObject root;
+    root.insert(QStringLiteral("type"), QStringLiteral("state"));
+    root.insert(QStringLiteral("width"), m_resolution.width());
+    root.insert(QStringLiteral("height"), m_resolution.height());
+    root.insert(QStringLiteral("transition"), m_transitionType == TR_FADE ? QStringLiteral("fade") : QStringLiteral("none"));
+
+    QJsonObject background;
+    background.insert(QStringLiteral("enabled"), m_backgroundImage.available);
+    background.insert(QStringLiteral("version"), QString::number(m_backgroundImage.version));
+    background.insert(QStringLiteral("url"), QString("/assets/background.png?v=%1").arg(m_backgroundImage.version));
+    root.insert(QStringLiteral("backgroundImage"), background);
+
+    QJsonObject text;
+    text.insert(QStringLiteral("enabled"), m_textImage.available);
+    text.insert(QStringLiteral("version"), QString::number(m_textImage.version));
+    text.insert(QStringLiteral("url"), QString("/assets/text.png?v=%1").arg(m_textImage.version));
+    root.insert(QStringLiteral("textImage"), text);
+
+    QJsonObject overlay;
+    overlay.insert(QStringLiteral("enabled"), m_overlayImage.available);
+    overlay.insert(QStringLiteral("version"), QString::number(m_overlayImage.version));
+    overlay.insert(QStringLiteral("url"), QString("/assets/overlay?v=%1").arg(m_overlayImage.version));
+    root.insert(QStringLiteral("overlay"), overlay);
+
+    QJsonObject backgroundVideo;
+    backgroundVideo.insert(QStringLiteral("active"), !m_backgroundVideoPath.isEmpty());
+    backgroundVideo.insert(QStringLiteral("url"), QString("/media/background?v=%1").arg(m_mediaVersion));
+    backgroundVideo.insert(QStringLiteral("loop"), m_backgroundVideoLoop);
+    backgroundVideo.insert(QStringLiteral("fillMode"), m_backgroundVideoFillMode);
+    backgroundVideo.insert(QStringLiteral("paused"), m_backgroundVideoPaused);
+    root.insert(QStringLiteral("backgroundVideo"), backgroundVideo);
+
+    QJsonObject mainVideo;
+    mainVideo.insert(QStringLiteral("active"), !m_mainVideoPath.isEmpty());
+    mainVideo.insert(QStringLiteral("url"), QString("/media/main?v=%1").arg(m_mediaVersion));
+    mainVideo.insert(QStringLiteral("paused"), m_mainVideoPaused);
+    mainVideo.insert(QStringLiteral("positionMs"), QString::number(m_mainVideoPosition));
+    mainVideo.insert(QStringLiteral("volume"), m_mainVideoVolume);
+    mainVideo.insert(QStringLiteral("muted"), m_mainVideoMuted);
+    root.insert(QStringLiteral("mainVideo"), mainVideo);
+
+    root.insert(QStringLiteral("browserUrl"), browserUrl());
+    return QJsonDocument(root).toJson(QJsonDocument::Compact);
+}
+
+void VirtualOutput::onNewHttpConnection()
+{
+    if (!m_httpServer) {
+        return;
+    }
+
+    while (m_httpServer->hasPendingConnections()) {
+        QTcpSocket *socket = m_httpServer->nextPendingConnection();
+        m_httpSockets.insert(socket);
+        connect(socket, SIGNAL(readyRead()), this, SLOT(onSocketReadyRead()));
+        connect(socket, SIGNAL(disconnected()), this, SLOT(onSocketDisconnected()));
+    }
+}
+
+void VirtualOutput::onSocketReadyRead()
+{
+    QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
+    if (!socket) {
+        return;
+    }
+
+    QByteArray requestData = socket->property("requestBuffer").toByteArray();
+    requestData += socket->readAll();
+    if (!requestData.contains("\r\n\r\n")) {
+        socket->setProperty("requestBuffer", requestData);
+        return;
+    }
+
+    socket->setProperty("requestBuffer", QByteArray());
+
+    handleHttpRequest(socket, requestData);
+}
+
+void VirtualOutput::onSocketDisconnected()
+{
+    QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
+    if (!socket) {
+        return;
+    }
+    m_httpSockets.remove(socket);
+    socket->deleteLater();
+}
+
+void VirtualOutput::onNewWebSocketConnection()
+{
+    if (!m_webSocketServer) {
+        return;
+    }
+
+    QWebSocket *socket = m_webSocketServer->nextPendingConnection();
+    if (!socket) {
+        return;
+    }
+
+    connect(socket, SIGNAL(disconnected()), this, SLOT(onWebSocketDisconnected()));
+    m_clients.insert(socket);
+    sendState(socket);
+}
+
+void VirtualOutput::onWebSocketDisconnected()
+{
+    QWebSocket *socket = qobject_cast<QWebSocket*>(sender());
+    if (!socket) {
+        return;
+    }
+    m_clients.remove(socket);
+    socket->deleteLater();
+}
+
+void VirtualOutput::resetHttpSocket(QTcpSocket *socket)
+{
+    if (!socket) {
+        return;
+    }
+    socket->disconnectFromHost();
+}
+
+void VirtualOutput::handleHttpRequest(QTcpSocket *socket, const QByteArray &requestData)
+{
+    const QList<QByteArray> sections = requestData.split('\n');
+    if (sections.isEmpty()) {
+        sendBadRequest(socket);
+        return;
+    }
+
+    const QByteArray requestLine = sections.first().trimmed();
+    const QList<QByteArray> requestParts = requestLine.split(' ');
+    if (requestParts.size() < 2) {
+        sendBadRequest(socket);
+        return;
+    }
+
+    const QByteArray method = requestParts.at(0);
+    const bool sendBody = (method != "HEAD");
+    if (method != "GET" && method != "HEAD") {
+        sendMethodNotAllowed(socket);
+        return;
+    }
+
+    QByteArray rangeHeader;
+    for (int i = 1; i < sections.count(); ++i) {
+        const QByteArray line = sections.at(i).trimmed();
+        if (line.startsWith("Range:")) {
+            rangeHeader = line.mid(QByteArray("Range:").size()).trimmed();
+        }
+    }
+
+    const QUrl url = QUrl::fromEncoded(requestParts.at(1));
+    const QString path = url.path().isEmpty() ? QStringLiteral("/") : url.path();
+
+    if (path == QStringLiteral("/") || path == QStringLiteral("/index.html")) {
+        QFile file(QString::fromLatin1(kVirtualOutputPage));
+        if (!file.open(QIODevice::ReadOnly)) {
+            sendNotFound(socket);
+            return;
+        }
+        const QByteArray body = file.readAll();
+        sendHttpResponse(socket, "HTTP/1.1 200 OK", "text/html; charset=utf-8", body, QList<QByteArray>(), sendBody, body.size());
+        return;
+    }
+
+    if (path == QStringLiteral("/virtualoutput.js")) {
+        QFile file(QString::fromLatin1(kVirtualOutputScript));
+        if (!file.open(QIODevice::ReadOnly)) {
+            sendNotFound(socket);
+            return;
+        }
+        const QByteArray body = file.readAll();
+        sendHttpResponse(socket, "HTTP/1.1 200 OK", "application/javascript; charset=utf-8", body, QList<QByteArray>(), sendBody, body.size());
+        return;
+    }
+
+    if (path == QStringLiteral("/virtualoutput.css")) {
+        QFile file(QString::fromLatin1(kVirtualOutputStyle));
+        if (!file.open(QIODevice::ReadOnly)) {
+            sendNotFound(socket);
+            return;
+        }
+        const QByteArray body = file.readAll();
+        sendHttpResponse(socket, "HTTP/1.1 200 OK", "text/css; charset=utf-8", body, QList<QByteArray>(), sendBody, body.size());
+        return;
+    }
+
+    if (path == QStringLiteral("/assets/background.png")) {
+        sendImageResponse(socket, m_backgroundImage, sendBody);
+        return;
+    }
+
+    if (path == QStringLiteral("/assets/text.png")) {
+        sendImageResponse(socket, m_textImage, sendBody);
+        return;
+    }
+
+    if (path == QStringLiteral("/assets/overlay")) {
+        sendImageResponse(socket, m_overlayImage, sendBody);
+        return;
+    }
+
+    if (path == QStringLiteral("/media/main")) {
+        sendMediaResponse(socket, m_mainVideoPath, sendBody, rangeHeader);
+        return;
+    }
+
+    if (path == QStringLiteral("/media/background")) {
+        sendMediaResponse(socket, m_backgroundVideoPath, sendBody, rangeHeader);
+        return;
+    }
+
+    sendNotFound(socket);
+}
+
+void VirtualOutput::sendHttpResponse(QTcpSocket *socket, const QByteArray &statusLine,
+                                     const QByteArray &contentType, const QByteArray &body,
+                                     const QList<QByteArray> &extraHeaders, bool sendBody,
+                                     qint64 contentLength)
+{
+    if (!socket) {
+        return;
+    }
+
+    QByteArray response;
+    response += statusLine + "\r\n";
+    response += "Connection: close\r\n";
+    response += "Cache-Control: no-store, no-cache, must-revalidate\r\n";
+    response += "Pragma: no-cache\r\n";
+    if (!contentType.isEmpty()) {
+        response += "Content-Type: " + contentType + "\r\n";
+    }
+    if (contentLength < 0) {
+        contentLength = body.size();
+    }
+    response += "Content-Length: " + QByteArray::number(contentLength) + "\r\n";
+    foreach (const QByteArray &header, extraHeaders) {
+        response += header + "\r\n";
+    }
+    response += "\r\n";
+    if (sendBody) {
+        response += body;
+    }
+
+    socket->write(response);
+    resetHttpSocket(socket);
+}
+
+void VirtualOutput::sendImageResponse(QTcpSocket *socket, const AssetState &asset, bool sendBody)
+{
+    if (!asset.available) {
+        sendNotFound(socket);
+        return;
+    }
+
+    sendHttpResponse(socket, "HTTP/1.1 200 OK", asset.contentType.toUtf8(), asset.data,
+                     QList<QByteArray>(), sendBody, asset.data.size());
+}
+
+void VirtualOutput::sendMediaResponse(QTcpSocket *socket, const QString &filePath, bool sendBody,
+                                      const QByteArray &rangeHeader)
+{
+    QFile file(filePath);
+    if (filePath.isEmpty() || !file.exists() || !file.open(QIODevice::ReadOnly)) {
+        sendNotFound(socket);
+        return;
+    }
+
+    const qint64 totalSize = file.size();
+    qint64 start = 0;
+    qint64 end = totalSize > 0 ? totalSize - 1 : 0;
+    bool partial = false;
+
+    if (!rangeHeader.isEmpty() && rangeHeader.startsWith("bytes=")) {
+        const QByteArray range = rangeHeader.mid(6);
+        const QList<QByteArray> parts = range.split('-');
+        if (!parts.isEmpty()) {
+            const QByteArray startPart = parts.at(0).trimmed();
+            const QByteArray endPart = parts.size() > 1 ? parts.at(1).trimmed() : QByteArray();
+            if (!startPart.isEmpty()) {
+                start = startPart.toLongLong();
+            }
+            if (!endPart.isEmpty()) {
+                end = endPart.toLongLong();
+            }
+            if (end >= totalSize) {
+                end = totalSize - 1;
+            }
+            if (start < 0) {
+                start = 0;
+            }
+            if (start <= end && start < totalSize) {
+                partial = true;
+            }
+        }
+    }
+
+    const qint64 length = partial ? (end - start + 1) : totalSize;
+    if (partial) {
+        file.seek(start);
+    }
+    const QByteArray body = sendBody ? file.read(length) : QByteArray();
+
+    QList<QByteArray> headers;
+    headers << "Accept-Ranges: bytes";
+    if (partial) {
+        headers << QByteArray("Content-Range: bytes ") + QByteArray::number(start) + "-" + QByteArray::number(end) + "/" + QByteArray::number(totalSize);
+        sendHttpResponse(socket, "HTTP/1.1 206 Partial Content", contentTypeForFile(filePath).toUtf8(), body, headers, sendBody, length);
+    } else {
+        const QByteArray fullBody = sendBody ? file.readAll() : QByteArray();
+        sendHttpResponse(socket, "HTTP/1.1 200 OK", contentTypeForFile(filePath).toUtf8(), fullBody, headers, sendBody, totalSize);
+    }
+}
+
+void VirtualOutput::sendNotFound(QTcpSocket *socket)
+{
+    sendHttpResponse(socket, "HTTP/1.1 404 Not Found", "text/plain; charset=utf-8", "Not Found");
+}
+
+void VirtualOutput::sendMethodNotAllowed(QTcpSocket *socket)
+{
+    sendHttpResponse(socket, "HTTP/1.1 405 Method Not Allowed", "text/plain; charset=utf-8", "Method Not Allowed",
+                     QList<QByteArray>() << "Allow: GET, HEAD");
+}
+
+void VirtualOutput::sendBadRequest(QTcpSocket *socket)
+{
+    sendHttpResponse(socket, "HTTP/1.1 400 Bad Request", "text/plain; charset=utf-8", "Bad Request");
 }
 
 void VirtualOutput::keyReleaseEvent(QKeyEvent *event)
 {
-    // This will be implemented in Phase 1.2+ when VirtualDisplayArea.qml is created
-    // For now, this is a placeholder for key handling
-    Q_UNUSED(event);
+    Q_UNUSED(event)
 }

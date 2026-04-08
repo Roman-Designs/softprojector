@@ -22,6 +22,7 @@ QT += core \
     gui \
     widgets \
     network \
+    websockets \
     sql \
     qml \
     quick \

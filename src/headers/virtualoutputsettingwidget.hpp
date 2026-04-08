@@ -23,6 +23,7 @@
 #include <QtWidgets>
 #include <QtSql>
 #include "settings.hpp"
+#include "virtualoutput.hpp"
 
 namespace Ui {
 class VirtualOutputSettingWidget;
@@ -56,6 +57,7 @@ private slots:
     void on_toolButtonLowerThirdTextColor_clicked();
     void on_fontComboBoxLowerThird_currentFontChanged(const QFont &font);
     void on_pushButtonPreview_clicked();
+    void on_toolButtonCopyBrowserUrl_clicked();
 
     void updateCustomResolutionVisibility();
     void updateThemeComboState();
@@ -68,6 +70,7 @@ private:
     QString getFontText(QFont font);
     void updateColorPreview(QGraphicsView *graphicsView, const QColor &color);
     void updateFontPreview();
+    void updateBrowserUrl();
 
     VirtualOutputSettings m_settings;
     QStringList m_themes;

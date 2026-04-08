@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SoftProjector Virtual Output</title>
+  <link rel="stylesheet" href="/virtualoutput.css">
+</head>
+<body>
+  <div id="app" class="app">
+    <div id="stage" class="stage">
+      <img id="backgroundA" class="layer image-layer active" alt="">
+      <img id="backgroundB" class="layer image-layer" alt="">
+      <video id="backgroundVideo" class="layer video-layer" muted playsinline></video>
+      <video id="mainVideo" class="layer video-layer video-main" playsinline></video>
+      <img id="textA" class="layer image-layer active" alt="">
+      <img id="textB" class="layer image-layer" alt="">
+      <img id="overlay" class="layer overlay-layer" alt="">
+      <div id="offline" class="offline">Waiting for softProjector virtual output...</div>
+    </div>
+  </div>
+  <script src="/virtualoutput.js"></script>
+</body>
+</html>

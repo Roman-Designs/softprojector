@@ -198,10 +198,50 @@
      </layout>
     </widget>
    </item>
-   <item>
-    <widget class="QGroupBox" name="groupBoxOverlay">
-     <property name="title">
-      <string>Overlay Image (Logo)</string>
+    <item>
+     <widget class="QGroupBox" name="groupBoxBrowserSource">
+      <property name="title">
+       <string>Browser Source</string>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayoutBrowserSource">
+       <item>
+        <widget class="QLabel" name="labelBrowserSourceInfo">
+         <property name="text">
+          <string>Use this URL in OBS Browser Source:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayoutBrowserSource">
+         <item>
+          <widget class="QLineEdit" name="lineEditBrowserUrl">
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+           <property name="toolTip">
+            <string>Local browser source URL for OBS</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QToolButton" name="toolButtonCopyBrowserUrl">
+           <property name="toolTip">
+            <string>Copy browser source URL to clipboard</string>
+           </property>
+           <property name="text">
+            <string>Copy</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QGroupBox" name="groupBoxOverlay">
+      <property name="title">
+       <string>Overlay Image (Logo)</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayoutOverlay">
       <item>
