@@ -33,6 +33,8 @@ TARGET = SoftProjector
 TEMPLATE = app
 CONFIG += x86 ppc x86_64 ppc64 # Compile a universal build
 
+macx: QMAKE_CXXFLAGS += -include arm_acle.h
+
 RES_DIR = $${PWD}/unknownsys_build
 win32: RES_DIR = $${PWD}/win32_build
 unix:  RES_DIR = $${PWD}/unix_build

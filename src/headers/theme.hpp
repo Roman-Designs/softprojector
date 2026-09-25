@@ -20,96 +20,9 @@
 #ifndef THEME_HPP
 #define THEME_HPP
 
-//#include <QtCore>
 #include <QtSql>
-//#include "spfunctions.hpp"
+#include <array>
 #include "settings.hpp"
-/*
-class PassiveSettings
-{
-public:
-    PassiveSettings();
-    bool useBackground;
-    QString backgroundName;
-    QPixmap background;
-    bool useDisp2settings;
-};
-
-class BibleSettings
-{
-    // To store Bible projection related settings
-public:
-    BibleSettings();
-    bool useShadow;
-    bool useFading;
-    bool useBlurShadow;
-    bool useBackground;
-    QString backgroundName;
-    QPixmap background;
-    QFont textFont;
-    QColor textColor;
-    int textAlignmentV;
-    int textAlignmentH;
-    QFont captionFont;
-    QColor captionColor;
-    int captionAlignment;
-    int captionPosition;
-    bool useAbbriviations;
-    int screenUse;
-    int screenPosition;
-
-    bool useDisp2settings;
-};
-
-class SongSettings
-{
-    // To store Song related settings
-public:
-    SongSettings();
-    bool useFading;
-    bool useShadow;
-    bool useBlurShadow;
-    bool showStanzaTitle;
-    bool showSongKey;
-    bool showSongNumber;
-    QColor infoColor;
-    QFont infoFont;
-    int infoAling; // 0 = Top, 1 = Bottom
-    bool showSongEnding;
-    QColor endingColor;
-    QFont endingFont;
-    int endingType; // 0 = ***, 1 = ---, 2 = °°°, 3 = •••, 4 = ●●●, 5 = ▪▪▪, 6 = ■■■, 7 = for song copyright info
-    int endingPosition;
-    bool useBackground;
-    QString backgroundName; // file path for background image
-    QPixmap background;
-    QColor textColor;
-    QFont textFont;
-    int textAlignmentV;
-    int textAlignmentH;
-    int screenUse;
-    int screenPositon; // 0 = Top, 1 = Bottom
-    bool useDisp2settings;
-};
-
-class AnnounceSettings
-{   // To store Announcement related settings
-public:
-    AnnounceSettings();
-    bool useShadow;
-    bool useFading;
-    bool useBlurShadow;
-    bool useBackground;
-    QString backgroundName; // file path for background image
-    QPixmap background;
-    QFont textFont;
-    QColor textColor;
-    int textAlignmentV;
-    int textAlignmentH;
-
-    bool useDisp2settings;
-};
-*/
 
 class ThemeInfo
 {
@@ -125,23 +38,10 @@ class Theme
 public:
     Theme();
     TextSettingsBase common;
-    TextSettingsBase common2; // Holds secondary display screen settings
-    TextSettings passive;
-    TextSettings passive2; // Holds secondary display screen settings
-    TextSettings passive3;
-    TextSettings passive4; // Holds fourth display screen settings
-    BibleSettings bible;
-    BibleSettings bible2; // Holds secondary display screen settings
-    BibleSettings bible3;
-    BibleSettings bible4; // Holds fourth display screen settings
-    SongSettings song;
-    SongSettings song2; // Holds secondary display screen settings
-    SongSettings song3;
-    SongSettings song4; // Holds fourth display screen settings
-    TextSettings announce;
-    TextSettings announce2; // Holds secondary display screen settings
-    TextSettings announce3;
-    TextSettings announce4; // Holds fourth display screen settings
+    std::array<TextSettings, 4> passive;
+    std::array<BibleSettings, 4> bible;
+    std::array<SongSettings, 4> song;
+    std::array<TextSettings, 4> announce;
 
 public slots:
     void saveThemeNew();
@@ -153,22 +53,14 @@ public slots:
     ThemeInfo getThemeInfo();
 
 private:
-     ThemeInfo m_info;
+    ThemeInfo m_info;
 
-private slots:
-    void savePassiveNew(int screen, TextSettings &settings);
-    void saveBibleNew(int screen, BibleSettings &settings);
-    void saveSongNew(int screen, SongSettings &settings);
-    void saveAnnounceNew(int screen, TextSettings &settings);
-    void savePassiveUpdate(int screen, TextSettings &settings);
-    void saveBibleUpdate(int screen, BibleSettings &settings);
-    void saveSongUpdate(int screen, SongSettings &settings);
-    void saveAnnounceUpdate(int screen, TextSettings &settings);
-    void loadPassive(int screen, TextSettings &settings);
-    void loadBible(int screen, BibleSettings &settings);
-    void loadSong(int screen, SongSettings &settings);
-    void loadAnnounce(int screen, TextSettings &settings);
-
+    template<typename T>
+    void saveNew(int screen, T &settings, const char *table, const char *columns);
+    template<typename T>
+    void saveUpdate(int screen, T &settings, const char *table, const char *columns);
+    template<typename T>
+    void load(int screen, T &settings, const char *table);
 };
 
 #endif // THEME_HPP

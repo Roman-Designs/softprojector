@@ -17,9 +17,11 @@
 //
 ***************************************************************************/
 
-#include "../3rdparty/headers/qmediaplaylist.h"
 #include "../headers/projectordisplayscreen.hpp"
 #include "ui_projectordisplayscreen.h"
+
+// QMediaPlaylist enums for Qt6 compatibility
+enum PlaylistPlaybackMode { CurrentItemOnce = 0, CurrentItemInLoop = 1, Sequential = 2, Loop = 3 };
 
 
 ProjectorDisplayScreen::ProjectorDisplayScreen(QWidget *parent) :
@@ -178,7 +180,7 @@ void ProjectorDisplayScreen::setBackVideo(QString path)
 
     setVideoSource(item,path);
     item->setProperty("volume",0.0);
-    item->setProperty("loops",QMediaPlaylist::Loop);
+    item->setProperty("loops",PlaylistPlaybackMode::Loop);
     item2->setProperty("fillMode",Qt::IgnoreAspectRatio);
 }
 
@@ -447,7 +449,7 @@ void ProjectorDisplayScreen::renderVideo(VideoInfo videoDetails)
     setVideoSource(item,videoDetails.filePath);
 
     item->setProperty("volume",1.0);
-    item->setProperty("loops",QMediaPlaylist::CurrentItemOnce);
+    item->setProperty("loops",PlaylistPlaybackMode::CurrentItemOnce);
     item2->setProperty("fillMode",Qt::KeepAspectRatio);
 
     updateScreen();

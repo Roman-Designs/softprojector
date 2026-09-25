@@ -62,15 +62,12 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
 }
 
 void SettingsDialog::loadSettings(GeneralSettings &sets, Theme &thm, SlideShowSettings &ssets,
-                                  BibleVersionSettings &bsets, BibleVersionSettings &bsets2,
-                                  BibleVersionSettings &bsets3, BibleVersionSettings &bsets4)
+                                  BibleVersionSettings bsets[4])
 {
     gsettings = sets;
     theme = thm;
-    bsettings = bsets;
-    bsettings2 = bsets2;
-    bsettings3 = bsets3;
-    bsettings4 = bsets4;
+    for (int i = 0; i < 4; ++i)
+        bsettings[i] = bsets[i];
     ssettings = ssets;
 
     // remember main display window setting if they will be changed
@@ -82,7 +79,7 @@ void SettingsDialog::loadSettings(GeneralSettings &sets, Theme &thm, SlideShowSe
 
     // Set individual items
     generalSettingswidget->setSettings(gsettings);
-    bibleSettingswidget->setBibleVersions(bsettings,bsettings2,bsettings3,bsettings4);
+    bibleSettingswidget->setBibleVersions(bsettings[0], bsettings[1], bsettings[2], bsettings[3]);
     pictureSettingWidget->setSettings(ssettings);
     setThemes();
 }
@@ -159,12 +156,12 @@ void SettingsDialog::on_buttonBox_clicked(QAbstractButton *button)
 void SettingsDialog::applySettings()
 {
     gsettings = generalSettingswidget->getSettings();
-    bibleSettingswidget->getBibleVersions(bsettings,bsettings2,bsettings3,bsettings4);
+    bibleSettingswidget->getBibleVersions(bsettings[0], bsettings[1], bsettings[2], bsettings[3]);
     pictureSettingWidget->getSettings(ssettings);
     getThemes();
 
     // Apply settings
-    emit updateSettings(gsettings,theme,ssettings,bsettings,bsettings2,bsettings3,bsettings4);
+    emit updateSettings(gsettings,theme,ssettings,bsettings);
 
     // Update <display_on_top> only when changed, or when screen location has been changed
     if(is_always_on_top!=gsettings.displayIsOnTop
@@ -192,18 +189,18 @@ void SettingsDialog::applySettings()
 
 void SettingsDialog::getThemes()
 {
-    passiveSettingwidget->getSettings(theme.passive, theme.passive2, theme.passive3, theme.passive4);
-    bibleSettingswidget->getSettings(theme.bible, theme.bible2, theme.bible3, theme.bible4);
-    songSettingswidget->getSettings(theme.song, theme.song2, theme.song3, theme.song4);
-    announcementSettingswidget->getSettings(theme.announce, theme.announce2, theme.announce3, theme.announce4);
+    passiveSettingwidget->getSettings(theme.passive[0], theme.passive[1], theme.passive[2], theme.passive[3]);
+    bibleSettingswidget->getSettings(theme.bible[0], theme.bible[1], theme.bible[2], theme.bible[3]);
+    songSettingswidget->getSettings(theme.song[0], theme.song[1], theme.song[2], theme.song[3]);
+    announcementSettingswidget->getSettings(theme.announce[0], theme.announce[1], theme.announce[2], theme.announce[3]);
 }
 
 void SettingsDialog::setThemes()
 {
-    passiveSettingwidget->setSetings(theme.passive, theme.passive2, theme.passive3, theme.passive4);
-    bibleSettingswidget->setSettings(theme.bible, theme.bible2, theme.bible3, theme.bible4);
-    songSettingswidget->setSettings(theme.song, theme.song2, theme.song3, theme.song4);
-    announcementSettingswidget->setSettings(theme.announce, theme.announce2, theme.announce3, theme.announce4);
+    passiveSettingwidget->setSetings(theme.passive[0], theme.passive[1], theme.passive[2], theme.passive[3]);
+    bibleSettingswidget->setSettings(theme.bible[0], theme.bible[1], theme.bible[2], theme.bible[3]);
+    songSettingswidget->setSettings(theme.song[0], theme.song[1], theme.song[2], theme.song[3]);
+    announcementSettingswidget->setSettings(theme.announce[0], theme.announce[1], theme.announce[2], theme.announce[3]);
 }
 
 void SettingsDialog::changeTheme(int theme_id)

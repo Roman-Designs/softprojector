@@ -353,10 +353,7 @@ public:
     Settings();
     GeneralSettings general;
     SpSettings spMain;
-    BibleVersionSettings bibleSets;
-    BibleVersionSettings bibleSets2;
-    BibleVersionSettings bibleSets3;
-    BibleVersionSettings bibleSets4;
+    std::array<BibleVersionSettings, 4> bibleSets;
     SlideShowSettings slideSets;
 
     bool isSpClosing;

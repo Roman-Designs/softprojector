@@ -45,13 +45,11 @@ public:
 
 public slots:
     void loadSettings(GeneralSettings& sets, Theme &thm, SlideShowSettings &ssets,
-                      BibleVersionSettings &bsets, BibleVersionSettings &bsets2,
-                      BibleVersionSettings &bsets3, BibleVersionSettings &bsets4);
+                      BibleVersionSettings bsets[4]);
 
 signals:
     void updateSettings(GeneralSettings& sets, Theme &thm, SlideShowSettings &ssets,
-                        BibleVersionSettings& bsets, BibleVersionSettings& bsets2,
-                        BibleVersionSettings& bsets3, BibleVersionSettings& bsets4);
+                        BibleVersionSettings bsets[4]);
     void positionsDisplayWindow();
     void updateScreen();
 
@@ -66,10 +64,7 @@ private:
 
     GeneralSettings gsettings;
     Theme theme;
-    BibleVersionSettings bsettings;
-    BibleVersionSettings bsettings2;
-    BibleVersionSettings bsettings3;
-    BibleVersionSettings bsettings4;
+    BibleVersionSettings bsettings[4];
     SlideShowSettings ssettings;
 
     GeneralSettingWidget *generalSettingswidget;

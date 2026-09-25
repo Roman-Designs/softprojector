@@ -859,78 +859,30 @@ void Settings::loadSettings()
                     spMain.isWindowMaximized = (v=="true");
             }
         }
-        else if(t == "bible1")
+        else if(t.startsWith("bible"))
         {
-            dataB1Ok = true;
-            values = sets.split("\n");
-            for(int i(0);i<values.count();++i)
-            {
-                s = values.at(i);
-                set = s.split("=");
-                n = set.at(0).trimmed();
-                v = set.at(1).trimmed();
-                if(n == "primary")
-                    bibleSets.primaryBible = v;
-                else if(n == "secondary")
-                    bibleSets.secondaryBible = v;
-                else if (n == "trinary")
-                    bibleSets.trinaryBible = v;
-                else if (n == "operator")
-                    bibleSets.operatorBible = v;
-            }
-        }
-        else if(t == "bible2")
-        {
-            dataB2Ok = true;
-            values = sets.split("\n");
-            for(int i(0);i<values.count();++i)
-            {
-                s = values.at(i);
-                set = s.split("=");
-                n = set.at(0).trimmed();
-                v = set.at(1).trimmed();
-                if(n == "primary")
-                    bibleSets2.primaryBible = v;
-                else if(n == "secondary")
-                    bibleSets2.secondaryBible = v;
-                else if (n == "trinary")
-                    bibleSets2.trinaryBible = v;
-            }
-        }
-        else if(t == "bible3")
-        {
-            dataB3Ok = true;
-            values = sets.split("\n");
-            for(int i(0);i<values.count();++i)
-            {
-                s = values.at(i);
-                set = s.split("=");
-                n = set.at(0).trimmed();
-                v = set.at(1).trimmed();
-                if(n == "primary")
-                    bibleSets3.primaryBible = v;
-                else if(n == "secondary")
-                    bibleSets3.secondaryBible = v;
-                else if (n == "trinary")
-                    bibleSets3.trinaryBible = v;
-            }
-        }
-        else if(t == "bible4")
-        {
-            dataB4Ok = true;
-            values = sets.split("\n");
-            for(int i(0);i<values.count();++i)
-            {
-                s = values.at(i);
-                set = s.split("=");
-                n = set.at(0).trimmed();
-                v = set.at(1).trimmed();
-                if(n == "primary")
-                    bibleSets4.primaryBible = v;
-                else if(n == "secondary")
-                    bibleSets4.secondaryBible = v;
-                else if (n == "trinary")
-                    bibleSets4.trinaryBible = v;
+            int idx = t.mid(5).toInt() - 1;
+            if (idx >= 0 && idx < 4) {
+                if (idx == 0) dataB1Ok = true;
+                else if (idx == 1) dataB2Ok = true;
+                else if (idx == 2) dataB3Ok = true;
+                else if (idx == 3) dataB4Ok = true;
+                values = sets.split("\n");
+                for(int i(0);i<values.count();++i)
+                {
+                    s = values.at(i);
+                    set = s.split("=");
+                    n = set.at(0).trimmed();
+                    v = set.at(1).trimmed();
+                    if(n == "primary")
+                        bibleSets[idx].primaryBible = v;
+                    else if(n == "secondary")
+                        bibleSets[idx].secondaryBible = v;
+                    else if (n == "trinary")
+                        bibleSets[idx].trinaryBible = v;
+                    else if (n == "operator")
+                        bibleSets[idx].operatorBible = v;
+                }
             }
         }
         else if(t == "pix")
@@ -958,14 +910,20 @@ void Settings::loadSettings()
     }
 
     // if no data exist, then create
-    if(!dataGenOk || !dataSpOk || !dataB1Ok || !dataB2Ok || !dataB3Ok || !dataB4Ok|| !dataPixOk)
+    bool dataBOk[4] = {dataB1Ok, dataB2Ok, dataB3Ok, dataB4Ok};
+    bool allBibleOk = true;
+    for (int i = 0; i < 4; ++i)
+        if (!dataBOk[i])
+            allBibleOk = false;
+    if(!dataGenOk || !dataSpOk || !allBibleOk || !dataPixOk)
         saveNewSettings();
 }
 
 void Settings::saveSettings()
 {
     QSqlQuery sq;
-    QString gset,spset,b1set,b2set,b3set,b4set,pset;//general,bible,song,annouce,spmain
+    QString gset,spset,pset;//general,bible,song,annouce,spmain
+    QString bsets[4];
 
     // **** Prepare general settings ***************************************
     if(general.displayIsOnTop)
@@ -996,26 +954,14 @@ void Settings::saveSettings()
     else
         spset += "\nisWindowMaximized = false";
 
-    // **** prepare screen 1 bible versions
-    b1set = "primary = " + bibleSets.primaryBible;
-    b1set += "\nsecondary = " + bibleSets.secondaryBible;
-    b1set += "\ntrinary = " + bibleSets.trinaryBible;
-    b1set += "\noperator = " + bibleSets.operatorBible;
-
-    // **** prepare screen 2 bible versions
-    b2set = "primary = " + bibleSets2.primaryBible;
-    b2set += "\nsecondary = " + bibleSets2.secondaryBible;
-    b2set += "\ntrinary = " + bibleSets2.trinaryBible;
-
-    // **** prepare screen 3 bible versions
-    b3set = "primary = " + bibleSets3.primaryBible;
-    b3set += "\nsecondary = " + bibleSets3.secondaryBible;
-    b3set += "\ntrinary = " + bibleSets3.trinaryBible;
-
-    // **** prepare screen 4 bible versions
-    b4set = "primary = " + bibleSets4.primaryBible;
-    b4set += "\nsecondary = " + bibleSets4.secondaryBible;
-    b4set += "\ntrinary = " + bibleSets4.trinaryBible;
+    // **** prepare bible versions for all 4 screens
+    for (int i = 0; i < 4; ++i) {
+        bsets[i] = "primary = " + bibleSets[i].primaryBible;
+        bsets[i] += "\nsecondary = " + bibleSets[i].secondaryBible;
+        bsets[i] += "\ntrinary = " + bibleSets[i].trinaryBible;
+        if (i == 0)
+            bsets[i] += "\noperator = " + bibleSets[i].operatorBible;
+    }
 
     // **** prepare pix settings
     if(slideSets.expandSmall)
@@ -1032,10 +978,8 @@ void Settings::saveSettings()
 
     sq.exec(QString("UPDATE Settings SET sets = '%1' WHERE type = 'general'").arg(gset));
     sq.exec(QString("UPDATE Settings SET sets = '%1' WHERE type = 'spMain'").arg(spset));
-    sq.exec(QString("UPDATE Settings SET sets = '%1' WHERE type = 'bible1'").arg(b1set));
-    sq.exec(QString("UPDATE Settings SET sets = '%1' WHERE type = 'bible2'").arg(b2set));
-    sq.exec(QString("UPDATE Settings SET sets = '%1' WHERE type = 'bible3'").arg(b3set));
-    sq.exec(QString("UPDATE Settings SET sets = '%1' WHERE type = 'bible4'").arg(b4set));
+    for (int i = 0; i < 4; ++i)
+        sq.exec(QString("UPDATE Settings SET sets = '%1' WHERE type = 'bible%2'").arg(bsets[i]).arg(i+1));
     sq.exec(QString("UPDATE Settings SET sets = '%1' WHERE type = 'pix'").arg(pset));
 }
 
@@ -1044,10 +988,8 @@ void Settings::saveNewSettings()
     QSqlQuery sq;
     sq.exec("INSERT OR REPLACE INTO Settings (type, sets) VALUES ('general', 'n=v')");
     sq.exec("INSERT OR REPLACE INTO Settings (type, sets) VALUES ('spMain', 'n=v')");
-    sq.exec("INSERT OR REPLACE INTO Settings (type, sets) VALUES ('bible1', 'n=v')");
-    sq.exec("INSERT OR REPLACE INTO Settings (type, sets) VALUES ('bible2', 'n=v')");
-    sq.exec("INSERT OR REPLACE INTO Settings (type, sets) VALUES ('bible3', 'n=v')");
-    sq.exec("INSERT OR REPLACE INTO Settings (type, sets) VALUES ('bible4', 'n=v')");
+    for (int i = 0; i < 4; ++i)
+        sq.exec(QString("INSERT OR REPLACE INTO Settings (type, sets) VALUES ('bible%1', 'n=v')").arg(i+1));
     sq.exec("INSERT OR REPLACE INTO Settings (type, sets) VALUES ('pix', 'n=v')");
 
     saveSettings();
