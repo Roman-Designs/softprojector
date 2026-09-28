@@ -51,6 +51,8 @@ Rectangle {
     {
         id: player
         objectName: "player"
+        videoOutput: vidOut
+        audioOutput: AudioOutput { id: audioOut }
         onSourceChanged: console.debug(player.source)
         onPositionChanged:
         {
@@ -63,6 +65,10 @@ Rectangle {
         onPlaybackStateChanged:
         {
             dispArea.playbackStateChanged(player.playbackState)
+        }
+        onMediaStatusChanged: {
+            if (player.mediaStatus === MediaPlayer.EndOfMedia)
+                dispArea.playbackStopped()
         }
     }
 
@@ -704,17 +710,17 @@ Rectangle {
 
     function setVideoVolume(level)
     {
-        player.volume = level
+        audioOut.volume = level
     }
 
     function setVideoMuted(toMute)
     {
-        player.muted = toMute
+        audioOut.muted = toMute
     }
 
     function setVideoPosition(position)
     {
-        player.seek(position)
+        player.position = position
     }
 
     function pauseVideo()
@@ -739,4 +745,3 @@ Rectangle {
         controls.visible = isVisible;
     }
 }
-

@@ -82,7 +82,7 @@ private slots:
 
     void videoPositionChanged(int position);
     void videoDurationChanged(int duration);
-    void videoPlaybackStateChanged(int state);
+    void forwardPlaybackState(int state);
     void playbackStopped();
 
 signals:

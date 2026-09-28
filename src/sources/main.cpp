@@ -21,6 +21,7 @@
 #include <QMessageBox>
 #include <QtSql>
 #include <QStyleFactory>
+#include <QStandardPaths>
 #include "../headers/softprojector.hpp"
 
 // Definitions for database versions 'dbVer' numbers
@@ -120,85 +121,19 @@ int main(int argc, char *argv[])
 
 //    QTextCodec::setCodecForTr(QTextCodec::codecForName("utf8"));
 
-    // Look for the database in all the same places that the QSql module will look,
-    // and display a friendly error if it was not found:
-    QString database_dir;
-#ifdef Q_WS_WIN
-    // If running on Windows, check if SoftProjector is Installed.
-    // If it is installed, then provide proper directory for database.
-    QDir d;
-    QString cur_app_path = a.applicationDirPath();
-    //    if(cur_app_path.contains(QString("C:%1Program Files").arg(d.separator())))
-    if(cur_app_path.contains("C:/Program Files") || cur_app_path.contains("C:\\Program Files"))
-    {
-        // Check if it is on Windows Vista and Later or before Vista
-        bool is_vista = (QSysInfo::WindowsVersion >= QSysInfo::WV_VISTA);
-        if(is_vista)
-        {
-            d.cd(d.rootPath());
-            if(d.cd("ProgramData"))
-            {
-                // Check if 'SoftProjector directory exists, if not, create one
-                if(d.cd("SoftProjector"))
-                    database_dir = d.absolutePath() + d.separator();
-                else
-                {
-                    d.mkdir("SoftProjector");
-                    if(d.cd("SoftProjector"))
-                        database_dir = d.absolutePath() + d.separator();
-                    else
-                        database_dir = cur_app_path + d.separator();
-                }
-            }
-            else if(d.cd("Public"))
-            {
-                // Check if 'SoftProjector directory exists, if not, create one
-                if(d.cd("SoftProjector"))
-                    database_dir = d.absolutePath() + d.separator();
-                else
-                {
-                    d.mkdir("SoftProjector");
-                    if(d.cd("SoftProjector"))
-                        database_dir = d.absolutePath() + d.separator();
-                    else
-                        database_dir = cur_app_path + d.separator();
-                }
-            }
-            else
-                database_dir = cur_app_path + d.separator();
-        }
-        else
-        {
-            d.cd(d.homePath());
-            d.cdUp();
-            if(d.cd("All Users"))
-            {
-                if(d.cd("Application Data"))
-                {
-                    // Check if 'SoftProjector directory exists, if not, create one
-                    if(d.cd("SoftProjector"))
-                        database_dir = d.absolutePath() + d.separator();
-                    else
-                    {
-                        d.mkdir("SoftProjector");
-                        if(d.cd("SoftProjector"))
-                            database_dir = d.absolutePath() + d.separator();
-                        else
-                            database_dir = cur_app_path + d.separator();
-                    }
-                }
-                else
-                    database_dir = cur_app_path + d.separator();
-            }
-            else
-                database_dir = cur_app_path + d.separator();
+    QString database_dir = a.applicationDirPath();
+    const QString portableDatabase = QDir(database_dir).filePath("spData.sqlite");
+    if (!QFileInfo(database_dir).isWritable() ||
+        (QFile::exists(portableDatabase) && !QFileInfo(portableDatabase).isWritable())) {
+        database_dir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+        if (!QDir().mkpath(database_dir) ||
+            (QFile::exists(portableDatabase) && !QFile::exists(QDir(database_dir).filePath("spData.sqlite")) &&
+             !QFile::copy(portableDatabase, QDir(database_dir).filePath("spData.sqlite")))) {
+            QMessageBox::critical(nullptr, "Database Error", "Could not create the application data directory or copy the existing database.");
+            return 1;
         }
     }
-    else
-        database_dir = cur_app_path + QDir::separator();
-#else
-    database_dir = a.applicationDirPath() + QDir::separator();
-#endif
+    database_dir += QDir::separator();
 #ifdef Q_OS_WIN
     // Use Dark Theme
     QSettings settings("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",QSettings::NativeFormat);

@@ -20,10 +20,6 @@
 #include "../headers/projectordisplayscreen.hpp"
 #include "ui_projectordisplayscreen.h"
 
-// QMediaPlaylist enums for Qt6 compatibility
-enum PlaylistPlaybackMode { CurrentItemOnce = 0, CurrentItemInLoop = 1, Sequential = 2, Loop = 3 };
-
-
 ProjectorDisplayScreen::ProjectorDisplayScreen(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::ProjectorDisplayScreen)
@@ -45,7 +41,7 @@ ProjectorDisplayScreen::ProjectorDisplayScreen(QWidget *parent) :
     // Connect Media Player objects
     connect(dispObj,SIGNAL(positionChanged(int)),this,SLOT(videoPositionChanged(int)));
     connect(dispObj,SIGNAL(durationChanged(int)),this,SLOT(videoDurationChanged(int)));
-    connect(dispObj,SIGNAL(playbackStateChanged(int)),this,SLOT(videoPlaybackStateChanged(int)));
+    connect(dispObj,SIGNAL(playbackStateChanged(int)),this,SLOT(forwardPlaybackState(int)));
     connect(dispObj,SIGNAL(playbackStopped()),this,SLOT(playbackStopped()));
 
     backImSwitch1 = backImSwitch2 = textImSwitch1 = textImSwitch2 = false;
@@ -179,19 +175,16 @@ void ProjectorDisplayScreen::setBackVideo(QString path)
     QObject *item2 = dispView->rootObject()->findChild<QObject*>("vidOut");
 
     setVideoSource(item,path);
-    item->setProperty("volume",0.0);
-    item->setProperty("loops",PlaylistPlaybackMode::Loop);
+    setVideoVolume(0);
+    item->setProperty("loops",-1);
     item2->setProperty("fillMode",Qt::IgnoreAspectRatio);
 }
 
 void ProjectorDisplayScreen::setVideoSource(QObject* playerObject, QUrl path)
 {
-//#if  (defined(Q_OS_UNIX))
-//    // Prefix "file://" to the file name only for Unix like systems.
-//    path = "file://" + path;
-//#endif
-//    playerObject->setProperty("source",path);
-    playerObject->setProperty("source",path.toString());
+    if (path.scheme().isEmpty())
+        path = QUrl::fromLocalFile(path.toString());
+    playerObject->setProperty("source",path);
 }
 
 void ProjectorDisplayScreen::updateScreen()
@@ -261,7 +254,7 @@ void ProjectorDisplayScreen::videoDurationChanged(int duration)
     emit videoDurationChanged((qint64)duration);
 }
 
-void ProjectorDisplayScreen::videoPlaybackStateChanged(int state)
+void ProjectorDisplayScreen::forwardPlaybackState(int state)
 {
     emit videoPlaybackStateChanged((QMediaPlayer::PlaybackState)state);
 }
@@ -448,8 +441,8 @@ void ProjectorDisplayScreen::renderVideo(VideoInfo videoDetails)
 
     setVideoSource(item,videoDetails.filePath);
 
-    item->setProperty("volume",1.0);
-    item->setProperty("loops",PlaylistPlaybackMode::CurrentItemOnce);
+    setVideoVolume(100);
+    item->setProperty("loops",1);
     item2->setProperty("fillMode",Qt::KeepAspectRatio);
 
     updateScreen();
@@ -488,7 +481,7 @@ void ProjectorDisplayScreen::setVideoVolume(int level)
 void ProjectorDisplayScreen::setVideoMuted(bool muted)
 {
     QObject *root = dispView->rootObject();
-    QMetaObject::invokeMethod(root,"setVideoVolume",Q_ARG(QVariant,(!muted)));
+    QMetaObject::invokeMethod(root,"setVideoMuted",Q_ARG(QVariant,muted));
 }
 
 void ProjectorDisplayScreen::setVideoPosition(qint64 position)

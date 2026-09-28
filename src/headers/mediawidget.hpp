@@ -22,6 +22,7 @@
 
 #include <QtWidgets>
 #include <QMediaPlayer>
+#include <QAudioOutput>
 #include <QtSql>
 //#include <phonon>
 //#include <phonon/MediaObject>
@@ -87,6 +88,7 @@ private:
     QIcon unmuteIcon;
 
     QMediaPlayer *player;
+    QAudioOutput *audioOutput;
     VideoPlayerWidget *videoWidget;
     MediaControl *mediaControls;
 
@@ -99,6 +101,7 @@ private:
     QUrl currentMediaUrl;
 
     bool isReadyToPlay;
+    bool schedulePlaybackPending = false;
 };
 
 #endif // MEDIAWIDGET_HPP

@@ -19,6 +19,7 @@
 
 #include "../headers/theme.hpp"
 #include "../headers/spfunctions.hpp"
+#include <type_traits>
 
 ThemeInfo::ThemeInfo()
 {
@@ -70,11 +71,18 @@ template<typename T>
 void Theme::saveNew(int screen, T &settings, const char *table, const char *columns)
 {
     QSqlQuery sq;
-    QString sql = QString("INSERT INTO %1 (%2) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").arg(table).arg(columns);
+    QString sql = QString("INSERT INTO %1 (%2) VALUES (%3)").arg(table).arg(columns)
+                      .arg(QString("?,").repeated(QString(columns).count(',') + 1).chopped(1));
     sq.prepare(sql);
     sq.addBindValue(m_info.themeId);
     sq.addBindValue(screen);
-    saveBindValues(sq, settings);
+    if constexpr (std::is_same_v<T, TextSettings>) {
+        if (QString(table) == "ThemeAnnounce")
+            saveAnnouncementValues(sq, settings);
+        else
+            saveBindValues(sq, settings);
+    } else
+        saveBindValues(sq, settings);
     sq.exec();
 }
 
@@ -89,10 +97,20 @@ void Theme::saveUpdate(int screen, T &settings, const char *table, const char *c
     }
     QString sql = QString("UPDATE %1 SET %2 WHERE theme_id = ? AND disp = ?").arg(table).arg(setParts.join(", "));
     sq.prepare(sql);
-    saveBindValues(sq, settings);
+    if constexpr (std::is_same_v<T, TextSettings>) {
+        if (QString(table) == "ThemeAnnounce")
+            saveAnnouncementValues(sq, settings);
+        else
+            saveBindValues(sq, settings);
+    } else
+        saveBindValues(sq, settings);
     sq.addBindValue(m_info.themeId);
     sq.addBindValue(screen);
     sq.exec();
+    if (sq.numRowsAffected() == 0) {
+        const QByteArray allColumns = QByteArray("theme_id, disp, ") + columns;
+        saveNew(screen, settings, table, allColumns.constData());
+    }
 }
 
 template<typename T>
@@ -100,15 +118,22 @@ void Theme::load(int screen, T &settings, const char *table)
 {
     QSqlQuery sq;
     sq.exec(QString("SELECT * FROM %1 WHERE theme_id = %2 and disp = %3").arg(table).arg(m_info.themeId).arg(screen));
-    sq.first();
+    if (!sq.first())
+        return;
     QSqlRecord sr = sq.record();
-    loadFromRecord(sr, settings);
+    if constexpr (std::is_same_v<T, TextSettings>) {
+        if (QString(table) == "ThemeAnnounce")
+            loadAnnouncementFromRecord(sr, settings);
+        else
+            loadFromRecord(sr, settings);
+    } else
+        loadFromRecord(sr, settings);
 }
 
 void Theme::saveThemeUpdate()
 {
     QSqlQuery sq;
-    sq.prepare("UPDATE Themes SET name = ?, comments = ? WHERE id = ?");
+    sq.prepare("UPDATE Themes SET name = ?, comment = ? WHERE id = ?");
     sq.addBindValue(m_info.name);
     sq.addBindValue(m_info.comments);
     sq.addBindValue(m_info.themeId);
@@ -189,6 +214,21 @@ void saveBindValues(QSqlQuery &sq, TextSettings &s)
     sq.addBindValue(s.useDisp1settings);
 }
 
+void saveAnnouncementValues(QSqlQuery &sq, TextSettings &s)
+{
+    sq.addBindValue(s.useShadow);
+    sq.addBindValue(s.useFading);
+    sq.addBindValue(s.useBlurShadow);
+    sq.addBindValue(s.useBackground);
+    sq.addBindValue(s.backgroundName);
+    sq.addBindValue(pixToByte(s.backgroundPix));
+    sq.addBindValue(s.textFont.toString());
+    sq.addBindValue((unsigned int)s.textColor.rgb());
+    sq.addBindValue(s.textAlignmentV);
+    sq.addBindValue(s.textAlignmentH);
+    sq.addBindValue(s.useDisp1settings);
+}
+
 void saveBindValues(QSqlQuery &sq, BibleSettings &s)
 {
     sq.addBindValue(s.useShadow);
@@ -250,6 +290,21 @@ void loadFromRecord(QSqlRecord &sr, TextSettings &s)
     s.useBackground = sr.field("use_background").value().toBool();
     s.backgroundName = sr.field("background_name").value().toString();
     s.backgroundPix.loadFromData(sr.field("background").value().toByteArray());
+    s.useDisp1settings = sr.field("use_disp_1").value().toBool();
+}
+
+void loadAnnouncementFromRecord(QSqlRecord &sr, TextSettings &s)
+{
+    s.useShadow = sr.field("use_shadow").value().toBool();
+    s.useFading = sr.field("use_fading").value().toBool();
+    s.useBlurShadow = sr.field("use_blur_shadow").value().toBool();
+    s.useBackground = sr.field("use_background").value().toBool();
+    s.backgroundName = sr.field("background_name").value().toString();
+    s.backgroundPix.loadFromData(sr.field("background").value().toByteArray());
+    s.textFont.fromString(sr.field("text_font").value().toString());
+    s.textColor = QColor::fromRgb(sr.field("text_color").value().toUInt());
+    s.textAlignmentV = sr.field("text_align_v").value().toInt();
+    s.textAlignmentH = sr.field("text_align_h").value().toInt();
     s.useDisp1settings = sr.field("use_disp_1").value().toBool();
 }
 

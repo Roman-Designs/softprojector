@@ -22,10 +22,6 @@
 #include "../headers/mediawidget.hpp"
 #include "ui_mediawidget.h"
 
-#ifdef Q_OS_WIN
-#include <Windows.h>// this need for Sleep function
-#endif
-
 MediaWidget::MediaWidget(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::MediaWidget)//,
@@ -33,31 +29,32 @@ MediaWidget::MediaWidget(QWidget *parent) :
     ui->setupUi(this);
     isReadyToPlay = false;
     player = new QMediaPlayer(this);
+    audioOutput = new QAudioOutput(player);
+    player->setAudioOutput(audioOutput);
 
     mediaControls = new MediaControl(this);
      ui->horizontalLayoutControls->addWidget(mediaControls);
 
-    connect(player, SIGNAL(metaDataChanged()), this, SLOT(updateInfo()));
-    connect(player, SIGNAL(mediaStatusChanged(QMediaPlayer::MediaStatus)),
-            this, SLOT(statusChanged(QMediaPlayer::MediaStatus)));
+    connect(player, &QMediaPlayer::metaDataChanged, this, &MediaWidget::updateInfo);
+    connect(player, &QMediaPlayer::mediaStatusChanged, this, &MediaWidget::statusChanged);
 //    connect(player, SIGNAL(bufferStatusChanged(int)), this, SLOT(bufferingProgress(int)));
-    connect(player, SIGNAL(videoAvailableChanged(bool)), this, SLOT(hasVideoChanged(bool)));
+    connect(player, &QMediaPlayer::hasVideoChanged, this, &MediaWidget::hasVideoChanged);
 //    connect(player, SIGNAL(error(QMediaPlayer::Error)), this, SLOT(displayErrorMessage()));
 
 
-    connect(mediaControls, SIGNAL(muted(bool)),player,SLOT(setMuted(bool)));
+    connect(mediaControls, &MediaControl::muted, audioOutput, &QAudioOutput::setMuted);
     connect(mediaControls, SIGNAL(play()),player,SLOT(play()));
     connect(mediaControls, SIGNAL(pause()),player,SLOT(pause()));
     connect(mediaControls, SIGNAL(stop()),player,SLOT(stop()));
     connect(mediaControls, SIGNAL(timeChanged(qint64)),player,SLOT(setPosition(qint64)));
-    connect(mediaControls, SIGNAL(volumeChanged(int)),player,SLOT(setVolume(int)));
+    connect(mediaControls, &MediaControl::volumeChanged, this,
+            [this](int level) { audioOutput->setVolume(level / 100.0); });
 
 
-    connect(player, SIGNAL(stateChanged(QMediaPlayer::State)), mediaControls, SLOT(updatePlayerState(QMediaPlayer::State)));
-    connect(player, SIGNAL(error(QMediaPlayer::Error)), this, SLOT(displayErrorMessage()));
+    connect(player, &QMediaPlayer::playbackStateChanged, mediaControls, &MediaControl::updatePlayerState);
+    connect(player, &QMediaPlayer::errorOccurred, this, &MediaWidget::displayErrorMessage);
     connect(player, SIGNAL(durationChanged(qint64)), mediaControls, SLOT(setMaximumTime(qint64)));
     connect(player, SIGNAL(positionChanged(qint64)), mediaControls, SLOT(updateTime(qint64)));
-    connect(player, SIGNAL(volumeChanged(int)),mediaControls,SLOT(setVolume(int)));
   videoWidget = new VideoPlayerWidget(this);
     player->setVideoOutput(videoWidget);
 
@@ -125,7 +122,7 @@ void MediaWidget::loadMediaLibrary()
     sq.exec("SELECT * FROM Media");
     while(sq.next())
     {
-        mediaFilePaths.append(sq.value(0).toString());
+        mediaFilePaths.append(QUrl::fromLocalFile(sq.value(0).toString()));
         mediaFileNames.append(sq.value(1).toString());
         ui->listWidgetMediaFiles->clear();
         ui->listWidgetMediaFiles->addItems(mediaFileNames);
@@ -146,11 +143,16 @@ void MediaWidget::statusChanged(QMediaPlayer::MediaStatus status)
                                .arg(tr("Media Stalled")));
         break;
     case QMediaPlayer::InvalidMedia:
+        schedulePlaybackPending = false;
         displayErrorMessage();
         break;
     case QMediaPlayer::LoadedMedia:
     case QMediaPlayer::BufferedMedia:
         isReadyToPlay = true;
+        if (schedulePlaybackPending) {
+            schedulePlaybackPending = false;
+            goLiveFromSchedule();
+        }
         break;
     }
 }
@@ -236,6 +238,7 @@ void MediaWidget::dragMoveEvent(QDragMoveEvent *e)
 void MediaWidget::playFile(QUrl filePath)
 {
     isReadyToPlay = false;
+    schedulePlaybackPending = false;
     player->stop();
     currentMediaUrl = filePath;
     QUrl m(filePath);
@@ -302,7 +305,10 @@ void MediaWidget::insertFiles(QStringList &files)
         QFileInfo f(file);
         mediaFileNames.append(f.fileName());
         mediaFilePaths.append(QUrl::fromLocalFile(file));
-        sq.exec(QString("INSERT INTO Media (long_Path, short_path) VALUES('%1', '%2')").arg(file).arg(f.fileName()));
+        sq.prepare("INSERT INTO Media (long_path, short_path) VALUES (?, ?)");
+        sq.addBindValue(file);
+        sq.addBindValue(f.fileName());
+        sq.exec();
         ui->listWidgetMediaFiles->addItem(f.fileName());
     }
 }
@@ -352,7 +358,9 @@ void MediaWidget::removeFromLibrary()
     if(cm>=0)
     {
         QSqlQuery sq;
-        sq.exec("DELETE FROM Media WHERE short_path = '" +mediaFileNames.at(cm)+ "'");
+        sq.prepare("DELETE FROM Media WHERE long_path = ?");
+        sq.addBindValue(mediaFilePaths.at(cm).toLocalFile());
+        sq.exec();
         mediaFilePaths.removeAt(cm);
         mediaFileNames.removeAt(cm);
 
@@ -400,21 +408,15 @@ void MediaWidget::setMediaFromSchedule(VideoInfo &v)
         return;
     }
     ui->listWidgetMediaFiles->clearSelection();
-    playFile(v.filePath);
+    playFile(v.filePath.scheme().isEmpty() ? QUrl::fromLocalFile(v.filePath.toString()) : v.filePath);
     player->pause();
 }
 
 void MediaWidget::goLiveFromSchedule()
 {
-    while (!isReadyToPlay)
-    {
-        int ms = 1000;
-#ifdef Q_OS_WIN
-        Sleep(uint(ms));
-#else
-        struct timespec ts = { ms / 1000, (ms % 1000) * 1000 * 1000 };
-        nanosleep(&ts, nullptr);
-#endif
+    if (!isReadyToPlay) {
+        schedulePlaybackPending = true;
+        return;
     }
     qDebug()<<videoWidget->isVisible()<<ui->pushButtonGoLive->isEnabled();
     if(ui->pushButtonGoLive->isEnabled())
