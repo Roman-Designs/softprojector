@@ -312,7 +312,8 @@ void ImageGenerator::drawBibleText(QPainter *painter, bool isShadow)
                                     tflags,cflags,top,left,w,maxh);
 
                 // Make sure that all fits into the screen
-                exit1 = ((trect1.height()+crect1.height())<=maxh);
+                exit1 = (trect1.height()+crect1.height()<=maxh &&
+                         trect1.width()<=w && crect1.width()<=w);
             }
             else
             {
@@ -327,7 +328,8 @@ void ImageGenerator::drawBibleText(QPainter *painter, bool isShadow)
                                     tflags,cflags,top2,left,w,maxh);
 
                 // Make sure that all fits into the screen
-                exit2 = ((trect2.height()+crect2.height())<=maxh);
+                exit2 = (trect2.height()+crect2.height()<=maxh &&
+                         trect2.width()<=w && crect2.width()<=w);
             }
             else
             {
@@ -342,7 +344,8 @@ void ImageGenerator::drawBibleText(QPainter *painter, bool isShadow)
                                     tflags,cflags,top3,left,w,maxh);
 
                 // Make sure that all fits into the screen
-                exit3 = ((trect3.height()+crect3.height())<=maxh);
+                exit3 = (trect3.height()+crect3.height()<=maxh &&
+                         trect3.width()<=w && crect3.width()<=w);
             }
             else
             {
