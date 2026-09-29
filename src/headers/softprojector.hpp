@@ -40,6 +40,7 @@
 #include "videoinfo.hpp"
 #include "slideshoweditor.hpp"
 #include "schedule.hpp"
+#include "streamoutput.hpp"
 
 class QActionGroup;
 
@@ -70,6 +71,7 @@ public:
     ManageDataDialog *manageDialog;
     EditWidget *editWidget;
     ProjectorDisplayScreen *pds[4];
+    StreamOutput streamOutput;
     PictureWidget *pictureWidget;
     MediaWidget *mediaPlayer;
     MediaControl *mediaControls;
@@ -152,6 +154,7 @@ private slots:
     void showAnnounce(int currentRow);
     void showPicture(int currentRow);
     void showVideo();
+    void applyStreamSettings(const StreamSettings &settings);
 
     void retranslateUis();
     void createLanguageActions();

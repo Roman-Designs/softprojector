@@ -42,6 +42,9 @@ SoftProjector::SoftProjector(QWidget *parent)
     //Setting up the Display Screen
     for (int i = 0; i < 4; ++i)
         pds[i] = new ProjectorDisplayScreen();
+    const QString streamError = streamOutput.configure(StreamSettings::load());
+    if (!streamError.isEmpty())
+        qWarning() << "Stream server:" << streamError;
 
     bibleWidget = new BibleWidget;
     songWidget = new SongWidget;
@@ -55,6 +58,8 @@ SoftProjector::SoftProjector(QWidget *parent)
     mediaControls = new MediaControl(this);
 
     ui->setupUi(this);
+    if (!streamError.isEmpty())
+        statusBar()->showMessage(tr("Stream unavailable: %1").arg(streamError));
 
     // Create action group for language slections
     languagePath = qApp->applicationDirPath()+QString(QDir::separator())+"translations"+QString(QDir::separator());
@@ -104,6 +109,7 @@ SoftProjector::SoftProjector(QWidget *parent)
     connect(pds[0], SIGNAL(nextSlide()), this, SLOT(nextSlide()));
     connect(pds[0], SIGNAL(prevSlide()), this, SLOT(prevSlide()));
     connect(settingsDialog, &SettingsDialog::updateSettings, this, &SoftProjector::updateSetting);
+    connect(settingsDialog, &SettingsDialog::updateStreamSettings, this, &SoftProjector::applyStreamSettings);
     connect(settingsDialog,SIGNAL(positionsDisplayWindow()),this,SLOT(positionDisplayWindow()));
     connect(settingsDialog,SIGNAL(updateScreen()),this,SLOT(updateScreen()));
     connect(songWidget,SIGNAL(addToSchedule(Song&)),this,SLOT(addToShcedule(Song&)));
@@ -331,6 +337,15 @@ void SoftProjector::updateSetting(GeneralSettings &g, Theme &t, SlideShowSetting
 
     for (int i = 0; i < 4; ++i)
         theme.bible[i].versions = mySettings.bibleSets[i];
+}
+
+void SoftProjector::applyStreamSettings(const StreamSettings &settings)
+{
+    const QString error = streamOutput.configure(settings);
+    if (!error.isEmpty())
+        QMessageBox::warning(this, tr("Stream output"), tr("Could not start the OBS browser source: %1").arg(error));
+    else
+        settings.save();
 }
 
 void SoftProjector::applySetting(GeneralSettings &g, Theme &t, SlideShowSettings &s,
@@ -620,6 +635,8 @@ void SoftProjector::updateScreen()
     if(!showing)
     {
         // Do not display any text:
+        if (streamOutput.settings().enabled)
+            streamOutput.clear();
         pds[0]->renderPassiveText(theme.passive[0].backgroundPix, theme.passive[0].useBackground);
 
         if(isSingleScreen)
@@ -690,6 +707,8 @@ void SoftProjector::updateScreen()
             break;
         }
     }
+    else if (!new_list && streamOutput.settings().enabled)
+        streamOutput.clear();
 }
 
 void SoftProjector::showBible()
@@ -717,6 +736,14 @@ void SoftProjector::showBible()
             }
         }
     }
+    if (streamOutput.settings().enabled) {
+        BibleSettings streamBible;
+        BibleVersionSettings versions;
+        versions.primaryBible = streamOutput.settings().bibleId.isEmpty()
+                ? mySettings.bibleSets[0].primaryBible : streamOutput.settings().bibleId;
+        streamOutput.renderBible(bibleWidget->bible.getCurrentVerseAndCaption(
+                currentRows, streamBible, versions));
+    }
 }
 
 void SoftProjector::showSong(int currentRow)
@@ -741,6 +768,8 @@ void SoftProjector::showSong(int currentRow)
             }
         }
     }
+    if (streamOutput.settings().enabled)
+        streamOutput.renderSong(current_song.getStanza(currentRow));
 }
 
 void SoftProjector::showAnnounce(int currentRow)
@@ -755,6 +784,8 @@ void SoftProjector::showAnnounce(int currentRow)
             }
         }
     }
+    if (streamOutput.settings().enabled)
+        streamOutput.renderAnnouncement(currentAnnounce.getAnnounceSlide(currentRow));
 }
 
 void SoftProjector::showPicture(int currentRow)
@@ -763,10 +794,17 @@ void SoftProjector::showPicture(int currentRow)
     for (int i = 1; i < 4; ++i)
         if (hasDisplayScreen[i])
             pds[i]->renderSlideShow(pictureShowList.at(currentRow).image,mySettings.slideSets);
+    if (streamOutput.settings().enabled) {
+        const SlideShowItem &slide = pictureShowList.at(currentRow);
+        QPixmap original(slide.path);
+        streamOutput.renderPicture(original.isNull() ? slide.image : original);
+    }
 }
 
 void SoftProjector::showVideo()
 {
+    if (streamOutput.settings().enabled)
+        streamOutput.clear();
     pds[0]->renderVideo(currentVideo);
     pds[0]->setVideoVolume(100);
     for (int i = 1; i < 4; ++i) {
@@ -792,6 +830,8 @@ void SoftProjector::on_actionHide_triggered()
 
 void SoftProjector::on_actionClear_triggered()
 {
+    if (streamOutput.settings().enabled)
+        streamOutput.clear();
     pds[0]->renderNotText();
     for (int i = 1; i < 4; ++i)
         if (hasDisplayScreen[i])
@@ -817,6 +857,8 @@ void SoftProjector::on_actionCloseDisplay_triggered()
             if (hasDisplayScreen[i])
                 pds[i]->hide();
         showing = false;
+        if (streamOutput.settings().enabled)
+            streamOutput.clear();
     }
 
     updateCloseDisplayButtons(ui->actionCloseDisplay->isChecked());
@@ -832,7 +874,8 @@ void SoftProjector::updateCloseDisplayButtons(bool isOn)
 
 void SoftProjector::on_actionSettings_triggered()
 {
-    settingsDialog->loadSettings(mySettings.general,theme,mySettings.slideSets, mySettings.bibleSets.data());
+    settingsDialog->loadSettings(mySettings.general,theme,mySettings.slideSets,
+                                 mySettings.bibleSets.data(), streamOutput.settings());
     settingsDialog->exec();
 }
 

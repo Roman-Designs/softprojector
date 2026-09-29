@@ -29,6 +29,7 @@
 #include "songsettingwidget.hpp"
 #include "announcementsettingwidget.hpp"
 #include "picturesettingwidget.hpp"
+#include "streamsettingswidget.hpp"
 
 namespace Ui {
 class SettingsDialog;
@@ -45,11 +46,12 @@ public:
 
 public slots:
     void loadSettings(GeneralSettings& sets, Theme &thm, SlideShowSettings &ssets,
-                      BibleVersionSettings bsets[4]);
+                      BibleVersionSettings bsets[4], const StreamSettings &stream);
 
 signals:
     void updateSettings(GeneralSettings& sets, Theme &thm, SlideShowSettings &ssets,
                         BibleVersionSettings bsets[4]);
+    void updateStreamSettings(const StreamSettings &settings);
     void positionsDisplayWindow();
     void updateScreen();
 
@@ -73,6 +75,7 @@ private:
     SongSettingWidget *songSettingswidget;
     PictureSettingWidget *pictureSettingWidget;
     AnnouncementSettingWidget *announcementSettingswidget;
+    StreamSettingsWidget *streamSettingswidget;
 
     QPushButton *btnOk;
     QPushButton *btnCancel;

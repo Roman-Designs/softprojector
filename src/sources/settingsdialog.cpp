@@ -32,6 +32,9 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
     songSettingswidget = new SongSettingWidget;
     pictureSettingWidget = new PictureSettingWidget;
     announcementSettingswidget = new AnnouncementSettingWidget;
+    streamSettingswidget = new StreamSettingsWidget;
+    ui->listWidget->addItem(new QListWidgetItem(QIcon(":/icons/icons/display.png"), tr("Stream")));
+    ui->stackedWidget->addWidget(streamSettingswidget);
 
     ui->scrollAreaGeneralSettings->setWidget(generalSettingswidget);
     ui->scrollAreaPassiveSettings->setWidget(passiveSettingwidget);
@@ -62,7 +65,7 @@ SettingsDialog::SettingsDialog(QWidget *parent) :
 }
 
 void SettingsDialog::loadSettings(GeneralSettings &sets, Theme &thm, SlideShowSettings &ssets,
-                                  BibleVersionSettings bsets[4])
+                                   BibleVersionSettings bsets[4], const StreamSettings &stream)
 {
     gsettings = sets;
     theme = thm;
@@ -81,6 +84,7 @@ void SettingsDialog::loadSettings(GeneralSettings &sets, Theme &thm, SlideShowSe
     generalSettingswidget->setSettings(gsettings);
     bibleSettingswidget->setBibleVersions(bsettings[0], bsettings[1], bsettings[2], bsettings[3]);
     pictureSettingWidget->setSettings(ssettings);
+    streamSettingswidget->setSettings(stream);
     setThemes();
 }
 
@@ -162,6 +166,7 @@ void SettingsDialog::applySettings()
 
     // Apply settings
     emit updateSettings(gsettings,theme,ssettings,bsettings);
+    emit updateStreamSettings(streamSettingswidget->getSettings());
 
     // Update <display_on_top> only when changed, or when screen location has been changed
     if(is_always_on_top!=gsettings.displayIsOnTop

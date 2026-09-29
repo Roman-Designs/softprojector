@@ -24,6 +24,7 @@ ImageGenerator::ImageGenerator()
 {
     m_type = 0;
     m_shadow = m_blurShadow = false;
+    m_bibleAddBKColorToText = m_songAddBKColorToText = m_announcementAddBKColorToText = false;
     m_shadowOffset = 3;
     m_blurRadius = 5;
     m_screenSize = QSize(1280,960);
@@ -129,11 +130,13 @@ QPixmap ImageGenerator::renderText()
 {
     QPixmap textMap(m_screenSize), shadowMap(m_screenSize), outMap(m_screenSize);
     //fill with transparent background
-    if(m_bibleAddBKColorToText == 1 || m_songAddBKColorToText == 1 || m_announcementAddBKColorToText == 1)
+    if((m_type == 1 && m_bibleAddBKColorToText) ||
+       (m_type == 2 && m_songAddBKColorToText) ||
+       (m_type == 3 && m_announcementAddBKColorToText))
     {  
-        if(m_announcementAddBKColorToText == 1) textMap.fill(m_announcementTextGenBKColor);
-        if(m_songAddBKColorToText == 1) textMap.fill(m_songTextGenBKColor);
-        if(m_bibleAddBKColorToText == 1) textMap.fill(m_bibleTextGenBKColor);
+        if(m_type == 3) textMap.fill(m_announcementTextGenBKColor);
+        if(m_type == 2) textMap.fill(m_songTextGenBKColor);
+        if(m_type == 1) textMap.fill(m_bibleTextGenBKColor);
     } else {
         textMap.fill(QColor(0,0,0,0));
     }
@@ -354,6 +357,8 @@ void ImageGenerator::drawBibleText(QPainter *painter, bool isShadow)
 
             if(!(exit1 && exit2 && exit3)) // The current font is too large, decrease and try again:
             {
+                // ponytail: Impossible regions clip at 1 pt; paginate if tiny regions matter.
+                if (m_bSets.textFont.pointSize() <= 1) break;
                 int current_size = m_bSets.textFont.pointSize();
                 int curCap_size = m_bSets.captionFont.pointSize();
                 current_size--;
@@ -590,7 +595,7 @@ void ImageGenerator::drawSongText(QPainter *painter, bool isShadow)
         ending_rect = boundRectOrDrawText(painter, false, left, top, width, height, Qt::AlignHCenter | Qt::AlignTop, song_ending);
 
         // Decrease song ending font size so that it would fit in the screen width
-        while(ending_rect.width()> width)
+        while(ending_rect.width()> width && m_sSets.endingFont.pointSize()>1)
         {
             m_sSets.endingFont.setPointSize(m_sSets.endingFont.pointSize()-1);
             painter->setFont(m_sSets.endingFont);
@@ -607,7 +612,7 @@ void ImageGenerator::drawSongText(QPainter *painter, bool isShadow)
         totalh = caph+endh+mainh;
 
         // Decrease song text to fit the screen
-        while(mainw > width || totalh > height)
+        while((mainw > width || totalh > height) && main_font.pointSize()>1)
         {
             main_font.setPointSize(main_font.pointSize() - 1);
             painter->setFont(main_font);
@@ -631,7 +636,7 @@ void ImageGenerator::drawSongText(QPainter *painter, bool isShadow)
             totalh = caph+endh+mainh;
 
             // Decrease song text to fit the screen
-            while(mainw > width || totalh > height)
+            while((mainw > width || totalh > height) && main_font.pointSize()>1)
             {
                 main_font.setPointSize(main_font.pointSize() - 1);
                 painter->setFont(main_font);
@@ -793,6 +798,7 @@ void ImageGenerator::drawAnnounceText(QPainter *painter, bool isShadow)
             exit = ( rect.width() <= w && rect.height() <= h );
             if( !exit )
             {
+                if (font.pointSize() <= 1) break;
                 font.setPointSize( font.pointSize()-1 );
                 painter->setFont(font);
             }
@@ -812,6 +818,7 @@ void ImageGenerator::drawAnnounceText(QPainter *painter, bool isShadow)
                 exit = ( rect.width() <= w && rect.height() <= h );
                 if( !exit )
                 {
+                    if (font.pointSize() <= 1) break;
                     font.setPointSize( font.pointSize()-1 );
                     painter->setFont(font);
                 }

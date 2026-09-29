@@ -1,12 +1,15 @@
 """Run against a freshly built SoftProjector executable (Qt offscreen)."""
 
+import json
 import os
 import shutil
+import socket
 import sqlite3
 import subprocess
 import sys
 import tempfile
 import time
+import urllib.request
 from pathlib import Path
 
 
@@ -46,4 +49,31 @@ with tempfile.TemporaryDirectory() as directory:
         process.terminate()
         process.wait(timeout=5)
 
-print("Fresh database and four complete default themes: OK")
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        port = probe.getsockname()[1]
+    with sqlite3.connect(database) as connection:
+        connection.execute("INSERT INTO Settings (type, sets) VALUES ('stream', ?)",
+                           (json.dumps({"enabled": True, "port": port, "canvas": 1080}),))
+    process = subprocess.Popen([executable], env=environment, stdout=subprocess.DEVNULL,
+                               stderr=subprocess.DEVNULL)
+    try:
+        deadline = time.monotonic() + 15
+        while time.monotonic() < deadline:
+            if process.poll() is not None:
+                raise AssertionError(f"SoftProjector exited with stream enabled: {process.returncode}")
+            try:
+                with urllib.request.urlopen(f"http://127.0.0.1:{port}/stream/state", timeout=1) as reply:
+                    assert json.load(reply)["width"] == 1920
+                with urllib.request.urlopen(f"http://127.0.0.1:{port}/stream/image", timeout=1) as reply:
+                    assert reply.read(8) == b"\x89PNG\r\n\x1a\n"
+                break
+            except OSError:
+                time.sleep(0.2)
+        else:
+            raise AssertionError("Stream browser-source URL did not become available")
+    finally:
+        process.terminate()
+        process.wait(timeout=5)
+
+print("Fresh database, themes, and stream browser source: OK")
