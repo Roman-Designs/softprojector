@@ -31,7 +31,9 @@
 Makefile*
 object_script*
 softProjector.pro.user
-unknownsys_build/*
-win32_build/*
-unix_build/*
-mac_build/*
+**/unknownsys_build/
+**/win32_build/
+**/unix_build/
+**/mac_build/
+**/spData.sqlite
+/dist/

@@ -19,6 +19,7 @@
 
 #include <QWidget>
 #include "../headers/softprojector.hpp"
+#include "../headers/version.hpp"
 #include "ui_softprojector.h"
 #include "../headers/aboutdialog.hpp"
 #include "../headers/editannouncementdialog.hpp"
@@ -182,12 +183,14 @@ SoftProjector::SoftProjector(QWidget *parent)
     connect(mediaControls, SIGNAL(muted(bool)), pds[0], SLOT(setVideoMuted(bool)));
     connect(mediaControls, SIGNAL(timeChanged(qint64)), this, SLOT(setVideoPosition(qint64)));
 
-    version_string = "2.2";
+    version_string = SOFTPROJECTOR_VERSION_LABEL;
     this->setWindowTitle("SoftProjector " + version_string);
+    connect(qApp, &QCoreApplication::aboutToQuit, this, &SoftProjector::shutdownOutputs);
 }
 
 SoftProjector::~SoftProjector()
 {
+    shutdownOutputs();
     saveSettings();
     delete songWidget;
     delete editWidget;
@@ -392,8 +395,24 @@ void SoftProjector::closeEvent(QCloseEvent *event)
 {
     if (!is_schedule_saved && !confirmSaveSchedule(tr("Do you want to save current schedule?")))
         event->ignore();
-    else
+    else {
+        shutdownOutputs();
         event->accept();
+        qApp->quit();
+    }
+}
+
+void SoftProjector::shutdownOutputs()
+{
+    if (outputsStopped)
+        return;
+    outputsStopped = true;
+    streamOutput.stop();
+    for (auto *display : pds) {
+        display->blockSignals(true);
+        display->stopVideo();
+        display->close();
+    }
 }
 
 void SoftProjector::keyPressEvent(QKeyEvent *event)

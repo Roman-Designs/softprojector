@@ -94,7 +94,8 @@ SOURCES += sources/main.cpp \
     sources/mediacontrol.cpp \
     sources/streamoutput.cpp \
     sources/streamsettingswidget.cpp
-HEADERS += headers/softprojector.hpp \
+HEADERS += headers/version.hpp \
+    headers/softprojector.hpp \
     headers/songwidget.hpp \
     headers/biblewidget.hpp \
     headers/editwidget.hpp \

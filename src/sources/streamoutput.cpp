@@ -6,6 +6,29 @@
 #include <QJsonObject>
 #include <QPainter>
 #include <QSqlQuery>
+#include <QTcpSocket>
+
+void StreamLayout::paintBackground(QPainter &painter, const QRect &canvas, const QRect &content) const
+{
+    if (!visible)
+        return;
+    if (useBackground && !background.isNull()) {
+        const QRect target = backgroundFullCanvas ? canvas : content;
+        QRectF source(background.rect());
+        const double scale = qMax(double(target.width()) / background.width(),
+                                 double(target.height()) / background.height());
+        if (scale > 0) {
+            const QSizeF size(target.width() / scale, target.height() / scale);
+            source = QRectF(QPointF((background.width() - size.width()) / 2,
+                                   (background.height() - size.height()) / 2), size);
+            painter.save();
+            painter.setRenderHint(QPainter::SmoothPixmapTransform);
+            painter.drawImage(target, background, source);
+            painter.restore();
+        }
+    }
+    painter.fillRect(content, panel);
+}
 
 StreamSettings::StreamSettings()
 {
@@ -54,6 +77,10 @@ StreamSettings StreamSettings::load()
         layout.shadow = value.value("shadow").toBool(layout.shadow);
         layout.showDetails = value.value("showDetails").toBool(layout.showDetails);
         layout.crop = value.value("crop").toBool(layout.crop);
+        layout.useBackground = value.value("useBackground").toBool(false);
+        layout.backgroundFullCanvas = value.value("backgroundFullCanvas").toBool(false);
+        layout.backgroundName = value.value("backgroundName").toString();
+        layout.background.loadFromData(QByteArray::fromBase64(value.value("background").toString().toLatin1()), "PNG");
     }
     return settings;
 }
@@ -62,6 +89,12 @@ void StreamSettings::save() const
 {
     QJsonArray list;
     for (const StreamLayout &layout : layouts) {
+        QByteArray background;
+        if (!layout.background.isNull()) {
+            QBuffer buffer(&background);
+            buffer.open(QIODevice::WriteOnly);
+            layout.background.save(&buffer, "PNG");
+        }
         list.append(QJsonObject{
             {"visible", layout.visible},
             {"rect", QJsonArray{layout.rect.x(), layout.rect.y(), layout.rect.width(), layout.rect.height()}},
@@ -70,7 +103,11 @@ void StreamSettings::save() const
             {"panel", layout.panel.name(QColor::HexArgb)},
             {"shadow", layout.shadow},
             {"showDetails", layout.showDetails},
-            {"crop", layout.crop}
+            {"crop", layout.crop},
+            {"useBackground", layout.useBackground},
+            {"backgroundFullCanvas", layout.backgroundFullCanvas},
+            {"backgroundName", layout.backgroundName},
+            {"background", QString::fromLatin1(background.toBase64())}
         });
     }
     const QByteArray json = QJsonDocument(QJsonObject{
@@ -92,22 +129,31 @@ StreamOutput::StreamOutput(QObject *parent) : QObject(parent), m_tcp(new QTcpSer
 <html lang="en"><head><meta charset="utf-8"><title>SoftProjector Stream</title>
 <style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent}img{display:block;width:100%;height:100%}</style>
 </head><body><img alt=""><script>
-let revision = -1;
+let revision = -1, lastSeen = Date.now();
+const image = document.querySelector('img');
+function clearFrame() {
+  image.style.visibility = 'hidden';
+  image.removeAttribute('src');
+  revision = -1;
+}
 async function refresh() {
   try {
-    const response = await fetch('/stream/state', {cache:'no-store'});
+    const response = await fetch('/stream/state', {cache:'no-store', signal:AbortSignal.timeout(1500)});
     if (!response.ok) throw new Error('Stream disconnected');
     const state = await response.json();
+    lastSeen = Date.now();
+    image.style.visibility = 'visible';
     if (state.revision !== revision) {
       revision = state.revision;
-      document.querySelector('img').src = '/stream/image?v=' + revision;
+      image.src = '/stream/image?v=' + revision;
     }
   } catch (_) {
-    document.querySelector('img').removeAttribute('src');
-    revision = -1;
+    clearFrame();
   }
+  setTimeout(refresh, 250);
 }
-refresh(); setInterval(refresh, 250);
+setInterval(() => { if (Date.now() - lastSeen > 1500) clearFrame(); }, 250);
+refresh();
 </script></body></html>)HTML";
     m_http.route("/stream", [] { return QHttpServerResponse("text/html; charset=utf-8", page); });
     m_http.route("/stream/state", [this] {
@@ -118,11 +164,27 @@ refresh(); setInterval(refresh, 250);
     m_http.route("/stream/image", [this] { return QHttpServerResponse("image/png", m_png); });
 }
 
+StreamOutput::~StreamOutput()
+{
+    stop();
+}
+
+void StreamOutput::stop()
+{
+    clear();
+    m_tcp->close();
+    // Closing a listener alone leaves accepted keep-alive connections alive.
+    for (auto *socket : m_tcp->findChildren<QTcpSocket *>())
+        socket->abort();
+    for (auto *socket : m_http.findChildren<QTcpSocket *>())
+        socket->abort();
+}
+
 QString StreamOutput::configure(const StreamSettings &settings)
 {
     const bool wasListening = m_tcp->isListening();
     if (wasListening && !settings.enabled)
-        clear();
+        stop();
     if (m_tcp->isListening() && (!settings.enabled || settings.port != m_settings.port))
         m_tcp->close();
     if (settings.enabled && !m_tcp->isListening()) {
@@ -158,9 +220,9 @@ QImage StreamOutput::canvas(StreamContent content) const
 {
     QImage image(m_settings.canvas, QImage::Format_ARGB32_Premultiplied);
     image.fill(Qt::transparent);
-    if (m_settings.layouts[content].visible) {
+    if (content != StreamVideo && m_settings.layouts[content].visible) {
         QPainter painter(&image);
-        painter.fillRect(area(content), m_settings.layouts[content].panel);
+        m_settings.layouts[content].paintBackground(painter, image.rect(), area(content));
     }
     return image;
 }

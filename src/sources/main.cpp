@@ -23,6 +23,7 @@
 #include <QStyleFactory>
 #include <QStandardPaths>
 #include "../headers/softprojector.hpp"
+#include "../headers/version.hpp"
 
 // Definitions for database versions 'dbVer' numbers
 // x - Official release. ex: 2 - for SoftProjector 2
@@ -112,6 +113,7 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     a.setApplicationName("SoftProjector");
+    a.setApplicationVersion(SOFTPROJECTOR_VERSION);
 
     QPixmap pixmap(":icons/icons/splash.png");
     QSplashScreen splash(pixmap);

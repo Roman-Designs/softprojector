@@ -8,6 +8,8 @@
 
 enum StreamContent { StreamBible, StreamSong, StreamAnnouncement, StreamPicture, StreamVideo, StreamContentCount };
 
+class QPainter;
+
 struct StreamLayout
 {
     bool visible = true;
@@ -18,6 +20,12 @@ struct StreamLayout
     bool shadow = true;
     bool showDetails = true;
     bool crop = false;
+    bool useBackground = false;
+    bool backgroundFullCanvas = false;
+    QString backgroundName;
+    QImage background;
+
+    void paintBackground(QPainter &painter, const QRect &canvas, const QRect &content) const;
 };
 
 struct StreamSettings
@@ -38,6 +46,7 @@ class StreamOutput : public QObject
     Q_OBJECT
 public:
     explicit StreamOutput(QObject *parent = nullptr);
+    ~StreamOutput() override;
     const StreamSettings &settings() const { return m_settings; }
     QString configure(const StreamSettings &settings);
     void renderBible(Verse verse);
@@ -45,6 +54,7 @@ public:
     void renderAnnouncement(AnnounceSlide slide);
     void renderPicture(const QPixmap &picture);
     void clear();
+    void stop();
 
 private:
     QRect area(StreamContent content) const;

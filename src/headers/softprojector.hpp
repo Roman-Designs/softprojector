@@ -99,6 +99,8 @@ public slots:
     void setAppDataDir(QDir d){appDataDir = d;}
 
 private:
+    bool outputsStopped = false;
+    void shutdownOutputs();
     Ui::SoftProjectorClass *ui;
     SettingsDialog *settingsDialog;
     HelpDialog *helpDialog;
