@@ -23,8 +23,15 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def run(command, cwd, environment=None):
+    command = [str(part) for part in command]
+    # Windows resolves CreateProcess executables using the parent process PATH,
+    # rather than the PATH passed through env. Locate Visual Studio tools first.
+    executable = shutil.which(command[0], path=(environment or os.environ).get("PATH"))
+    if executable is None:
+        raise RuntimeError(f"Build tool was not found: {command[0]}")
+    command[0] = executable
     print("Running:", subprocess.list2cmdline([str(part) for part in command]), flush=True)
-    subprocess.run([str(part) for part in command], cwd=cwd, env=environment, check=True)
+    subprocess.run(command, cwd=cwd, env=environment, check=True)
 
 
 def compiler_environment(devcmd, qt):
