@@ -184,8 +184,10 @@ def validate_contents(package):
         if not (package / name).is_file():
             raise RuntimeError(f"Missing required runtime file: {name}")
     for file in package.rglob("*"):
+        debug_dll = (file.suffix.lower() == ".dll" and file.stem.endswith("d")
+                     and file.with_name(file.stem[:-1] + file.suffix).is_file())
         if file.is_file() and (file.suffix.lower() in {".sqlite", ".db", ".ini", ".pdb", ".obj", ".spsc", ".spsm"}
-                               or file.name.lower().endswith("d.dll")):
+                               or debug_dll):
             raise RuntimeError(f"Unexpected user data or debug artifact: {file.relative_to(package)}")
 
 
