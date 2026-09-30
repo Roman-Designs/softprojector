@@ -1,6 +1,7 @@
 """Build, deploy, smoke-test, and zip a clean Windows x64 tester release."""
 
 import argparse
+from contextlib import closing
 import ctypes
 from ctypes import wintypes
 import hashlib
@@ -80,7 +81,7 @@ def close_application(process, window):
 
 
 def verify_empty_database(database):
-    with sqlite3.connect(database) as connection:
+    with closing(sqlite3.connect(database)) as connection, connection:
         for table in ("BibleVersions", "BibleBooks", "BibleVerse", "Songbooks", "Songs",
                       "Announcements", "Media", "SlideShows", "Slides"):
             if connection.execute(f'SELECT count(*) FROM "{table}"').fetchone()[0] != 0:
@@ -123,7 +124,7 @@ def smoke_test(package, work, label):
                     raise RuntimeError(f"Packaged application exited during startup: {process.returncode}")
                 window = main_window(process.pid, title)
                 if window and database.exists():
-                    with sqlite3.connect(database) as connection:
+                    with closing(sqlite3.connect(database)) as connection, connection:
                         try:
                             if connection.execute("SELECT count(*) FROM Settings").fetchone()[0] >= 7:
                                 return process, window
@@ -148,7 +149,7 @@ def smoke_test(package, work, label):
     with socket.socket() as probe:
         probe.bind(("127.0.0.1", 0))
         port = probe.getsockname()[1]
-    with sqlite3.connect(database) as connection:
+    with closing(sqlite3.connect(database)) as connection, connection:
         connection.execute("INSERT INTO Settings (type, sets) VALUES ('stream', ?)",
                            (json.dumps({"enabled": True, "port": port, "canvas": 1080}),))
     process, window = launch()
@@ -197,6 +198,7 @@ def main():
     parser.add_argument("--vs-devcmd", required=True, type=Path)
     parser.add_argument("--output-dir", type=Path, default=ROOT / "dist")
     parser.add_argument("--work-dir", type=Path, default=Path(tempfile.gettempdir()))
+    parser.add_argument("--overwrite", action="store_true", help="Replace an existing ZIP after verification succeeds")
     args = parser.parse_args()
     if os.name != "nt":
         parser.error("Windows packaging must run on Windows")
@@ -212,8 +214,8 @@ def main():
     name = f"SoftProjector-{version}-windows-x64"
     output = args.output_dir.resolve()
     archive = output / (name + ".zip")
-    if archive.exists():
-        raise RuntimeError(f"Refusing to overwrite an existing release: {archive}")
+    if archive.exists() and not args.overwrite:
+        raise RuntimeError(f"Release already exists (use --overwrite to replace it): {archive}")
     if subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True).strip():
         raise RuntimeError("Commit the release sources before packaging")
     commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
