@@ -471,36 +471,14 @@ void ImageGenerator::drawSongText(QPainter *painter, bool isShadow)
     // sure that the output rect is narrower than <width> and shorter than <height>.
 
     QString main_text = m_stanza.stanza;
-    QString caption_str;
-    QString song_ending = " ";
-
-    //QStringList lines_list = song_list.at(current_song_verse).split("\n");
-    QString song_num_str = QString::number(m_stanza.number);
-    QString song_key_str = m_stanza.tune;
-
-    // Check whether to display song numbers
+    const QString caption_str = m_sSets.showStanzaTitle ? m_stanza.stanzaTitle.trimmed() : QString();
+    QString song_ending;
+    QString song_num_str = m_sSets.showSongKey ? m_stanza.tune.trimmed() : QString();
     if (m_sSets.showSongNumber)
-        song_num_str = song_num_str;
-    else
-        song_num_str = " ";
-
-    // Check whether to display song key
-    if (m_sSets.showSongKey)
-        song_num_str = song_key_str + "  " + song_num_str;
-    else
-        song_num_str = song_num_str;
-
-    // Check wheter to display stanza tiles
-    if (m_sSets.showStanzaTitle)
-        caption_str = m_stanza.stanzaTitle;
-    else
-        caption_str = " ";
-
-    // If No cation,number or tune, give the space to song text
-    if(!m_sSets.showSongNumber && !m_sSets.showSongKey && !m_sSets.showStanzaTitle)
     {
-        song_num_str.clear();
-        caption_str.clear();
+        if (!song_num_str.isEmpty())
+            song_num_str += "  ";
+        song_num_str += QString::number(m_stanza.number);
     }
 
     // Prepare Song ending string
@@ -541,10 +519,6 @@ void ImageGenerator::drawSongText(QPainter *painter, bool isShadow)
     }
 
     int width, height;
-    // if not to show song ending, return its space to main text
-    if(!m_sSets.showSongEnding)
-        song_ending.clear();
-
     // Margins:
     int left = 30;
     int top = 20;
@@ -588,7 +562,8 @@ void ImageGenerator::drawSongText(QPainter *painter, bool isShadow)
         // Prepare Caption
         painter->setFont(m_sSets.infoFont);
         caption_rect = boundRectOrDrawText(painter, false, left, top, width, height, Qt::AlignLeft | Qt::AlignTop, caption_str);
-        caph = caption_rect.height();
+        num_rect = boundRectOrDrawText(painter, false, left, top, width, height, Qt::AlignRight | Qt::AlignTop, song_num_str);
+        caph = qMax(caption_rect.height(), num_rect.height());
 
         // Prepare Ending
         painter->setFont(m_sSets.endingFont);
@@ -649,6 +624,7 @@ void ImageGenerator::drawSongText(QPainter *painter, bool isShadow)
         m_sSets.textFont = main_font;
         m_isTextPrepared = true;
         m_sdSets.cRect = caption_rect;
+        m_sdSets.nRect = num_rect;
         m_sdSets.tRect = main_rect;
         m_sdSets.eRect = ending_rect;
         m_sdSets.tFlags = main_flags;
@@ -659,14 +635,14 @@ void ImageGenerator::drawSongText(QPainter *painter, bool isShadow)
     caption_rect = m_sdSets.cRect;
     main_rect = m_sdSets.tRect;
     ending_rect = m_sdSets.eRect;
-    caph = m_sdSets.cRect.height();
+    caph = qMax(m_sdSets.cRect.height(), m_sdSets.nRect.height());
     endh = m_sdSets.eRect.height();
     main_flags = m_sdSets.tFlags;
     mainh = height-caph-endh;
 
     if(m_songAddBKColorToText == 1)
     {
-        int fillheight = main_rect.height()+caption_rect.height();
+        int fillheight = main_rect.height()+caph;
         painter->fillRect(QRect(0, top+height-fillheight-left, width+(left*2), top+height), QBrush(m_songTextRecBKColor, Qt::SolidPattern));
     }
     if(m_sSets.infoAling == 0 && m_sSets.endingPosition == 0)
@@ -683,7 +659,7 @@ void ImageGenerator::drawSongText(QPainter *painter, bool isShadow)
             painter->setPen(m_sSets.textShadowColor);
         else
             painter->setPen(m_sSets.textColor);
-        main_rect = boundRectOrDrawText(painter, true, left, caption_rect.bottom(), width, mainh, main_flags, main_text);
+        main_rect = boundRectOrDrawText(painter, true, left, top+caph, width, mainh, main_flags, main_text);
         painter->setFont(m_sSets.endingFont);
         if(isShadow)
             painter->setPen(m_sSets.endingShadowColor);
@@ -711,7 +687,7 @@ void ImageGenerator::drawSongText(QPainter *painter, bool isShadow)
             painter->setPen(m_sSets.textShadowColor);
         else
             painter->setPen(m_sSets.textColor);
-        main_rect = boundRectOrDrawText(painter, true, left, caption_rect.bottom(), width, mainh, main_flags, main_text);
+        main_rect = boundRectOrDrawText(painter, true, left, top+caph, width, mainh, main_flags, main_text);
     }
     else if(m_sSets.infoAling == 1 && m_sSets.endingPosition == 0)
     {

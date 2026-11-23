@@ -154,6 +154,54 @@ int main(int argc, char **argv)
             if (image.pixelColor(x, y).alpha() > 0) { hasText = true; break; }
     assert(hasText);
 
+    Stanza stanza{};
+    stanza.stanza = "A test lyric\nAnother test lyric";
+    const auto textVerticalCenter = [](const QImage &frame) {
+        int top = frame.height();
+        int bottom = -1;
+        for (int y = 0; y < frame.height(); ++y) {
+            for (int x = 0; x < frame.width(); ++x) {
+                if (qAlpha(frame.pixel(x, y)) > 127) {
+                    top = qMin(top, y);
+                    bottom = y;
+                    break;
+                }
+            }
+        }
+        assert(top <= bottom);
+        return (top + bottom) / 2;
+    };
+    const auto centeredLyrics = [&](const QSize &size, QFont font) {
+        QPixmap reference(size);
+        reference.fill(Qt::transparent);
+        QPainter painter(&reference);
+        font.setPointSize(font.pointSize() * 3);
+        painter.setFont(font);
+        painter.drawText(reference.rect(), Qt::AlignCenter, stanza.stanza);
+        painter.end();
+        return textVerticalCenter(reference.toImage());
+    };
+
+    output.renderSong(stanza);
+    image = QImage::fromData(fetch("/stream/image"), "PNG");
+    assert(qAbs(textVerticalCenter(image) -
+                centeredLyrics(saved.canvas, saved.layouts[StreamSong].font)) <= 2);
+
+    ImageGenerator projector;
+    projector.setScreenSize(saved.canvas);
+    SongSettings songSettings;
+    songSettings.textFont = QFont("Arial", 22);
+    songSettings.endingFont = QFont("Arial", 20);
+    songSettings.useShadow = false;
+    const QImage projectorLyrics = projector.generateSongImage(stanza, songSettings).toImage();
+    assert(qAbs(textVerticalCenter(projectorLyrics) -
+                centeredLyrics(saved.canvas, songSettings.textFont)) <= 1);
+    songSettings.showSongEnding = false;
+    assert(projector.generateSongImage(stanza, songSettings).toImage() == projectorLyrics);
+    songSettings.showSongEnding = true;
+    stanza.isLast = true;
+    assert(projector.generateSongImage(stanza, songSettings).toImage() != projectorLyrics);
+
     QPixmap photo(100, 100);
     photo.fill(Qt::red);
     output.renderPicture(photo);
@@ -170,8 +218,8 @@ int main(int argc, char **argv)
             tiny.layouts[StreamAnnouncement].rect = QRectF(0, 0, .05, .05);
     assert(output.configure(tiny).isEmpty());
     output.renderBible(verse);
-    Stanza stanza{};
     stanza.stanza = verse.primary_text;
+    stanza.isLast = false;
     output.renderSong(stanza);
     AnnounceSlide announcement{};
     announcement.text = verse.primary_text;
