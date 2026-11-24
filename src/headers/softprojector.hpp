@@ -127,6 +127,13 @@ private:
     // Pictures
     QList<SlideShowItem> pictureShowList;
 
+    // Timed slides for slideshows and announcements
+    QTimer *slideTimer;
+    bool slideAutoNext = false;
+    int slideSeconds = 10;
+    bool slideLoop = false;
+    void restartSlideTimer();
+
     // video items
 //    Phonon::SeekSlider *playerSlider;
 //    Phonon::VolumeSlider *volumeSlider;
@@ -187,7 +194,9 @@ private slots:
     void setSongList(Song song, int row);
     void setAnnounceText(Announcement announce, int row);
     void setChapterList(QStringList chapter_list, QString caption, QItemSelection selectedItems);
-    void setPictureList(QList<SlideShowItem> &image_list, int row, QString name);
+    void setPictureList(SlideShow &show, int row);
+    void setSlideTiming(bool useAutoNext, int seconds, bool loop);
+    void advanceTimedSlide();
     void setVideo(VideoInfo &video);
     void playVideo();
     void pauseVideo();

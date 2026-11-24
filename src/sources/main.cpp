@@ -255,6 +255,7 @@ int main(int argc, char *argv[])
         return 1;
     }
     // Database is of correct version
+    SlideShow::ensureTimingColumns();
 
     SoftProjector w;
     w.setAppDataDir(QDir(database_dir));

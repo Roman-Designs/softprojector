@@ -27,6 +27,31 @@ PictureWidget::PictureWidget(QWidget *parent) :
     ui->setupUi(this);
     loadSlideShows();
     ui->pushButtonGoLive->setEnabled(false);
+
+    connect(ui->checkBoxAutoAdvance, &QCheckBox::toggled, this, &PictureWidget::onTimingControlsChanged);
+    connect(ui->spinBoxSlideTime, &QSpinBox::valueChanged, this, &PictureWidget::onTimingControlsChanged);
+    connect(ui->checkBoxLoop, &QCheckBox::toggled, this, &PictureWidget::onTimingControlsChanged);
+}
+
+void PictureWidget::onTimingControlsChanged()
+{
+    const bool autoNext = ui->checkBoxAutoAdvance->isChecked();
+    ui->spinBoxSlideTime->setEnabled(autoNext);
+    ui->checkBoxLoop->setEnabled(autoNext);
+    emit timingChanged(autoNext, ui->spinBoxSlideTime->value(), ui->checkBoxLoop->isChecked());
+}
+
+void PictureWidget::setTimingControls(const SlideShow &sshow)
+{
+    // Show the slideshow's saved timing without changing what is already live
+    const QSignalBlocker b1(ui->checkBoxAutoAdvance);
+    const QSignalBlocker b2(ui->spinBoxSlideTime);
+    const QSignalBlocker b3(ui->checkBoxLoop);
+    ui->checkBoxAutoAdvance->setChecked(sshow.useAutoNext);
+    ui->spinBoxSlideTime->setValue(sshow.slideTimer);
+    ui->checkBoxLoop->setChecked(sshow.loop);
+    ui->spinBoxSlideTime->setEnabled(sshow.useAutoNext);
+    ui->checkBoxLoop->setEnabled(sshow.useAutoNext);
 }
 
 PictureWidget::~PictureWidget()
@@ -226,7 +251,8 @@ void PictureWidget::on_pushButtonGoLive_clicked()
 
 void PictureWidget::sendToProjector()
 {
-    emit sendSlideShow(slides, ui->listWidgetSlides->currentRow(),currentSlideShow.name);
+    SlideShow show = getCurrentSlideshow();
+    emit sendSlideShow(show, ui->listWidgetSlides->currentRow());
 }
 
 void PictureWidget::loadSlideShow(int ss_id)
@@ -243,6 +269,7 @@ void PictureWidget::sendToPreview(SlideShow &sshow)
     slides.clear();
     ui->listWidgetSlides->clear();
     ui->labelPreviewSlideShow->setText(tr("Slide Show: %1").arg(currentSlideShow.name));
+    setTimingControls(currentSlideShow);
     foreach(const SlideShowItem &sst, currentSlideShow.slides)
     {
         slides.append(sst);
@@ -263,6 +290,9 @@ void PictureWidget::sendToPreviewFromSchedule(SlideShow &sshow)
 SlideShow PictureWidget::getCurrentSlideshow()
 {
     currentSlideShow.slides = slides;
+    currentSlideShow.useAutoNext = ui->checkBoxAutoAdvance->isChecked();
+    currentSlideShow.slideTimer = ui->spinBoxSlideTime->value();
+    currentSlideShow.loop = ui->checkBoxLoop->isChecked();
     return currentSlideShow;
 }
 
@@ -294,6 +324,6 @@ void PictureWidget::on_listWidgetSlideShow_itemSelectionChanged()
 
 void PictureWidget::on_listWidgetSlideShow_doubleClicked(const QModelIndex &index)
 {
-    currentSlideShow.slides = slides;
-    emit sendToSchedule(currentSlideShow);
+    SlideShow show = getCurrentSlideshow();
+    emit sendToSchedule(show);
 }

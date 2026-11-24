@@ -97,8 +97,15 @@ SoftProjector::SoftProjector(QWidget *parent)
     connect(songWidget, SIGNAL(setArrowCursor()), this, SLOT(setArrowCursor()));
     connect(songWidget, SIGNAL(setWaitCursor()), this, SLOT(setWaitCursor()));
     connect(announceWidget,SIGNAL(sendAnnounce(Announcement,int)), this, SLOT(setAnnounceText(Announcement,int)));
-    connect(pictureWidget, SIGNAL(sendSlideShow(QList<SlideShowItem>&,int,QString)),
-            this, SLOT(setPictureList(QList<SlideShowItem>&,int,QString)));
+    connect(pictureWidget, &PictureWidget::sendSlideShow, this, &SoftProjector::setPictureList);
+    connect(pictureWidget, &PictureWidget::timingChanged, this, [this](bool autoNext, int seconds, bool loop) {
+        // Apply the Pictures tab timing controls to a slideshow that is already live
+        if (pType == PICTURE)
+            setSlideTiming(autoNext, seconds, loop);
+    });
+    slideTimer = new QTimer(this);
+    slideTimer->setSingleShot(true);
+    connect(slideTimer, &QTimer::timeout, this, &SoftProjector::advanceTimedSlide);
     connect(pictureWidget, SIGNAL(sendToSchedule(SlideShow&)),this,SLOT(addToShcedule(SlideShow&)));
     connect(mediaPlayer, SIGNAL(toProjector(VideoInfo&)), this, SLOT(setVideo(VideoInfo&)));
     connect(mediaPlayer, &MediaWidget::loopChanged, this, &SoftProjector::setVideoLoop);
@@ -462,6 +469,9 @@ void SoftProjector::setAnnounceText(Announcement announce, int row)
 {
     currentAnnounce = announce;
     pType = ANNOUCEMENT;
+    slideAutoNext = announce.useAutoNext;
+    slideSeconds = announce.slideTimer;
+    slideLoop = announce.loop;
     ui->widgetMultiVerse->setVisible(false);
     ui->rbMultiVerse->setChecked(false);
     mediaControls->setVisible(false);
@@ -539,10 +549,15 @@ void SoftProjector::setChapterList(QStringList chapter_list, QString caption, QI
     updateScreen();
 }
 
-void SoftProjector::setPictureList(QList<SlideShowItem> &image_list,int row,QString name)
+void SoftProjector::setPictureList(SlideShow &show, int row)
 {
     // Called to show picture list
     pType = PICTURE;
+    slideAutoNext = show.useAutoNext;
+    slideSeconds = show.slideTimer;
+    slideLoop = show.loop;
+    QList<SlideShowItem> &image_list = show.slides;
+    const QString name = show.name;
     showing = true;
     ui->widgetMultiVerse->setVisible(false);
     ui->rbMultiVerse->setChecked(false);
@@ -741,6 +756,41 @@ void SoftProjector::updateScreen()
     }
     else if (!new_list && streamOutput.settings().enabled)
         streamOutput.clear();
+
+    if (!new_list)
+        restartSlideTimer();
+}
+
+void SoftProjector::setSlideTiming(bool useAutoNext, int seconds, bool loop)
+{
+    slideAutoNext = useAutoNext;
+    slideSeconds = seconds;
+    slideLoop = loop;
+    restartSlideTimer();
+}
+
+void SoftProjector::restartSlideTimer()
+{
+    // Every slide change restarts the countdown, so a manual change gets the full time.
+    const bool timedType = pType == PICTURE || pType == ANNOUCEMENT;
+    const int count = ui->listShow->count();
+    const int current = ui->listShow->currentRow();
+    const bool hasNext = current >= 0 && (current < count - 1 || slideLoop);
+    if (showing && timedType && slideAutoNext && slideSeconds > 0 && count > 1 && hasNext)
+        slideTimer->start(slideSeconds * 1000);
+    else
+        slideTimer->stop();
+}
+
+void SoftProjector::advanceTimedSlide()
+{
+    const int count = ui->listShow->count();
+    const int current = ui->listShow->currentRow();
+    if (current < count - 1)
+        ui->listShow->setCurrentRow(current + 1);
+    else if (slideLoop)
+        ui->listShow->setCurrentRow(0);
+    // Changing the row updates the screen, which restarts the timer when it should keep going.
 }
 
 void SoftProjector::showBible()
@@ -862,6 +912,7 @@ void SoftProjector::on_actionHide_triggered()
 
 void SoftProjector::on_actionClear_triggered()
 {
+    slideTimer->stop(); // Showing again restarts the timed slides
     if (streamOutput.settings().enabled)
         streamOutput.clear();
     pds[0]->renderNotText();
@@ -1804,7 +1855,7 @@ void SoftProjector::on_listWidgetSchedule_doubleClicked(const QModelIndex &index
     {
         ui->projectTab->setCurrentIndex(2);
         pictureWidget->sendToPreviewFromSchedule(s.slideshow);
-        setPictureList(s.slideshow.slides,0,s.slideshow.name);
+        setPictureList(s.slideshow,0);
     }
     else if(s.stype == "media")
     {
@@ -2011,7 +2062,21 @@ bool SoftProjector::saveSchedule(const QString &path)
                     "'songText' TEXT, 'notes' TEXT, 'usePrivate' BOOL, 'alignV' INTEGER, 'alignH' INTEGER, 'color' INTEGER, "
                     "'font' TEXT, 'infoColor' INTEGER, 'infoFont' TEXT, 'endingColor' INTEGER, 'endingFont' TEXT, "
                     "'useBack' BOOL, 'backImage' BLOB, 'backName' TEXT)");
-            saved = saved && sq.exec("CREATE TABLE IF NOT EXISTS 'slideshow' ('scid' INTEGER, 'ssid' INTEGER, 'name' TEXT, 'info' TEXT)");
+            saved = saved && sq.exec("CREATE TABLE IF NOT EXISTS 'slideshow' ('scid' INTEGER, 'ssid' INTEGER, 'name' TEXT, 'info' TEXT, "
+                    "'useAuto' BOOL, 'loop' BOOL, 'slideTimer' INTEGER)");
+            if (saved) {
+                // A schedule saved before Beta 3 keeps its old slideshow table when updated
+                QStringList columns;
+                sq.exec("PRAGMA table_info(slideshow)");
+                while (sq.next())
+                    columns.append(sq.value(1).toString());
+                if (!columns.contains("useAuto"))
+                    saved = sq.exec("ALTER TABLE slideshow ADD COLUMN 'useAuto' BOOL DEFAULT 0");
+                if (saved && !columns.contains("loop"))
+                    saved = sq.exec("ALTER TABLE slideshow ADD COLUMN 'loop' BOOL DEFAULT 0");
+                if (saved && !columns.contains("slideTimer"))
+                    saved = sq.exec("ALTER TABLE slideshow ADD COLUMN 'slideTimer' INTEGER DEFAULT 10");
+            }
             saved = saved && sq.exec("CREATE TABLE IF NOT EXISTS 'slides' ('scid' INTEGER, 'sid' INTEGER, 'name' TEXT, 'path' TEXT, "
                     "'porder' INTEGER, 'image' BLOB, 'imageSmall' BLOB, 'imagePreview' BLOB)");
             saved = saved && sq.exec("CREATE TABLE IF NOT EXISTS 'media' ('scid' INTEGER, 'name' TEXT, 'path' TEXT, 'aRatio' INTEGER)");
@@ -2093,11 +2158,14 @@ bool SoftProjector::saveScheduleItemNew(QSqlQuery &q, int scid, const Song &s)
 
 bool SoftProjector::saveScheduleItemNew(QSqlQuery &q, int scid, const SlideShow &s)
 {
-    q.prepare("INSERT INTO slideshow (scid,ssid,name,info) VALUES (?,?,?,?)");
+    q.prepare("INSERT INTO slideshow (scid,ssid,name,info,useAuto,loop,slideTimer) VALUES (?,?,?,?,?,?,?)");
     q.addBindValue(scid);
     q.addBindValue(s.slideShowId);
     q.addBindValue(s.name);
     q.addBindValue(s.info);
+    q.addBindValue(s.useAutoNext);
+    q.addBindValue(s.loop);
+    q.addBindValue(s.slideTimer);
     if (!q.exec())
         return false;
 
@@ -2363,6 +2431,15 @@ void SoftProjector::openScheduleItem(QSqlQuery &q, const int scid, SlideShow &s)
     s.slideShowId = q.value(0).toInt();
     s.name = q.value(1).toString();
     s.info = q.value(2).toString();
+
+    // Schedules saved before Beta 3 have no timing columns; keep the defaults for those.
+    if (q.exec("SELECT useAuto, loop, slideTimer FROM slideshow WHERE scid = " + QString::number(scid)) && q.first())
+    {
+        s.useAutoNext = q.value(0).toBool();
+        s.loop = q.value(1).toBool();
+        if (!q.value(2).isNull())
+            s.slideTimer = q.value(2).toInt();
+    }
 
     q.exec("SELECT sid, name, path, porder, image, imageSmall, imagePreview FROM slides WHERE scid = " + QString::number(scid));
     while(q.next())

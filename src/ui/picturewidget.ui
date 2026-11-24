@@ -66,6 +66,48 @@
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_2">
           <item>
+           <widget class="QCheckBox" name="checkBoxAutoAdvance">
+            <property name="toolTip">
+             <string>Move to the next slide automatically</string>
+            </property>
+            <property name="text">
+             <string>Advance every</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="spinBoxSlideTime">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="suffix">
+             <string> sec</string>
+            </property>
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>3600</number>
+            </property>
+            <property name="value">
+             <number>10</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="checkBoxLoop">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="toolTip">
+             <string>Start again from the first slide after the last one</string>
+            </property>
+            <property name="text">
+             <string>Loop</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <spacer name="horizontalSpacer">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
@@ -284,6 +326,9 @@
  <tabstops>
   <tabstop>listWidgetSlideShow</tabstop>
   <tabstop>listWidgetSlides</tabstop>
+  <tabstop>checkBoxAutoAdvance</tabstop>
+  <tabstop>spinBoxSlideTime</tabstop>
+  <tabstop>checkBoxLoop</tabstop>
   <tabstop>pushButtonGoLive</tabstop>
   <tabstop>pushButtonAddImages</tabstop>
   <tabstop>pushButtonRemoveImage</tabstop>

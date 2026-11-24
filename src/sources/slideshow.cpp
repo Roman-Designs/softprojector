@@ -32,6 +32,26 @@ SlideShowInfo::SlideShowInfo()
 SlideShow::SlideShow()
 {
     slideShowId = -1;
+    useAutoNext = false;
+    loop = false;
+    slideTimer = 10;
+}
+
+void SlideShow::ensureTimingColumns()
+{
+    // Older databases have no slide timing columns. Adding them does not change the
+    // database version, so earlier SoftProjector builds can still open the file.
+    QSqlQuery sq;
+    QStringList columns;
+    sq.exec("PRAGMA table_info(SlideShows)");
+    while(sq.next())
+        columns.append(sq.value(1).toString());
+    if(!columns.contains("use_auto"))
+        sq.exec("ALTER TABLE SlideShows ADD COLUMN 'use_auto' BOOL DEFAULT 0");
+    if(!columns.contains("loop"))
+        sq.exec("ALTER TABLE SlideShows ADD COLUMN 'loop' BOOL DEFAULT 0");
+    if(!columns.contains("slide_time"))
+        sq.exec("ALTER TABLE SlideShows ADD COLUMN 'slide_time' INTEGER DEFAULT 10");
 }
 
 void SlideShow::loadSlideShow(int id)
@@ -39,10 +59,13 @@ void SlideShow::loadSlideShow(int id)
     slides.clear();
     slideShowId = id;
     QSqlQuery sq;
-    sq.exec(QString("SELECT name, info FROM SlideShows WHERE id = %1").arg(slideShowId));
+    sq.exec(QString("SELECT name, info, use_auto, loop, slide_time FROM SlideShows WHERE id = %1").arg(slideShowId));
     sq.first();
     name = sq.value(0).toString();
     info = sq.value(1).toString();
+    useAutoNext = sq.value(2).toBool();
+    loop = sq.value(3).toBool();
+    slideTimer = sq.value(4).isNull() ? 10 : sq.value(4).toInt();
 
     QProgressDialog progress;
     progress.setMaximum(100);
@@ -104,9 +127,12 @@ void SlideShow::saveSideShow(QString savelbl, QWidget *ptW, QList<int> delList)
     // Create new slide show in not yet in database
     if(slideShowId == -1)
     {
-        sq.prepare("INSERT INTO SlideShows (name, info) VALUES (?,?)");
+        sq.prepare("INSERT INTO SlideShows (name, info, use_auto, loop, slide_time) VALUES (?,?,?,?,?)");
         sq.addBindValue(name);
         sq.addBindValue(info);
+        sq.addBindValue(useAutoNext);
+        sq.addBindValue(loop);
+        sq.addBindValue(slideTimer);
         sq.exec();
         sq.clear();
 
@@ -138,9 +164,12 @@ void SlideShow::saveSideShow(QString savelbl, QWidget *ptW, QList<int> delList)
     {
         // Update Slide Show
         // Update slide show info
-        sq.prepare("UPDATE SlideShows SET name = ?, info = ? WHERE id  = ?");
+        sq.prepare("UPDATE SlideShows SET name = ?, info = ?, use_auto = ?, loop = ?, slide_time = ? WHERE id  = ?");
         sq.addBindValue(name);
         sq.addBindValue(info);
+        sq.addBindValue(useAutoNext);
+        sq.addBindValue(loop);
+        sq.addBindValue(slideTimer);
         sq.addBindValue(slideShowId);
         sq.exec();
         sq.clear();

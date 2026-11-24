@@ -40,7 +40,8 @@ public:
     ~PictureWidget();
     
 signals:
-    void sendSlideShow(QList<SlideShowItem> &slideShow, int row,QString name);
+    void sendSlideShow(SlideShow &slideShow, int row);
+    void timingChanged(bool useAutoNext, int seconds, bool loop);
     void sendToSchedule(SlideShow &sshow);
 
 protected:
@@ -68,8 +69,10 @@ private slots:
     void loadSlideShow(int ss_id);
     void sendToPreview(SlideShow &sshow);
     void on_listWidgetSlideShow_doubleClicked(const QModelIndex &index);
+    void onTimingControlsChanged();
 
 private:
+    void setTimingControls(const SlideShow &sshow);
     Ui::PictureWidget *ui;
     QList<SlideShowInfo> slideShows;
     SlideShow currentSlideShow;

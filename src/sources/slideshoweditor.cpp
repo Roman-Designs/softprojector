@@ -27,6 +27,8 @@ SlideShowEditor::SlideShowEditor(QWidget *parent) :
 {
     ui->setupUi(this);
     updateButtonState();
+    connect(ui->checkBoxAutoAdvance, &QCheckBox::toggled, ui->spinBoxSlideTime, &QWidget::setEnabled);
+    connect(ui->checkBoxAutoAdvance, &QCheckBox::toggled, ui->checkBoxLoop, &QWidget::setEnabled);
 }
 
 SlideShowEditor::~SlideShowEditor()
@@ -45,6 +47,11 @@ void SlideShowEditor::loadSlideShow()
 {
     ui->lineEditTitle->setText(editSS.name);
     ui->plainTextEditInfo->setPlainText(editSS.info);
+    ui->checkBoxAutoAdvance->setChecked(editSS.useAutoNext);
+    ui->spinBoxSlideTime->setValue(editSS.slideTimer);
+    ui->checkBoxLoop->setChecked(editSS.loop);
+    ui->spinBoxSlideTime->setEnabled(editSS.useAutoNext);
+    ui->checkBoxLoop->setEnabled(editSS.useAutoNext);
 
     reloadSlides();
     ui->listWidgetSlides->setCurrentRow(0);
@@ -197,6 +204,9 @@ void SlideShowEditor::on_pushButtonSave_clicked()
     }
 
     editSS.info = ui->plainTextEditInfo->toPlainText();
+    editSS.useAutoNext = ui->checkBoxAutoAdvance->isChecked();
+    editSS.slideTimer = ui->spinBoxSlideTime->value();
+    editSS.loop = ui->checkBoxLoop->isChecked();
     editSS.saveSideShow(tr("Saving Slide Show"),this,deleteList);
     close();
 }

@@ -56,6 +56,66 @@
        </property>
       </widget>
      </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="labelPlayback">
+       <property name="text">
+        <string>Playback:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <layout class="QHBoxLayout" name="horizontalLayoutPlayback">
+       <item>
+        <widget class="QCheckBox" name="checkBoxAutoAdvance">
+         <property name="toolTip">
+          <string>Move to the next slide automatically</string>
+         </property>
+         <property name="text">
+          <string>Advance every</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QSpinBox" name="spinBoxSlideTime">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="suffix">
+          <string> sec</string>
+         </property>
+         <property name="minimum">
+          <number>1</number>
+         </property>
+         <property name="maximum">
+          <number>3600</number>
+         </property>
+         <property name="value">
+          <number>10</number>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="checkBoxLoop">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="toolTip">
+          <string>Start again from the first slide after the last one</string>
+         </property>
+         <property name="text">
+          <string>Loop</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacerPlayback">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </item>
     </layout>
    </item>
    <item row="1" column="0" rowspan="4">
@@ -219,6 +279,9 @@
  <tabstops>
   <tabstop>lineEditTitle</tabstop>
   <tabstop>plainTextEditInfo</tabstop>
+  <tabstop>checkBoxAutoAdvance</tabstop>
+  <tabstop>spinBoxSlideTime</tabstop>
+  <tabstop>checkBoxLoop</tabstop>
   <tabstop>listWidgetSlides</tabstop>
   <tabstop>pushButtonAddImages</tabstop>
   <tabstop>pushButtonRemoveImage</tabstop>

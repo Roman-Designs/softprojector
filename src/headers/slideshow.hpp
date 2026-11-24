@@ -57,9 +57,13 @@ public:
     int slideShowId;
     QString name;
     QString info;
+    bool useAutoNext;   // advance to the next slide on a timer
+    bool loop;          // return to the first slide after the last one
+    int slideTimer;     // seconds per slide
     QList<SlideShowItem> slides;
 
 public slots:
+    static void ensureTimingColumns();
     void loadSlideShow(int id);
     void saveSideShow(QString savelbl, QWidget *ptW, QList<int> delList);
 };
