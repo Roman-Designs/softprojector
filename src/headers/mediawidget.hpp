@@ -59,6 +59,7 @@ protected:
     void changeEvent(QEvent *e);
 
 signals:
+    void loopChanged(bool loop);
     void toProjector(VideoInfo &vid);
 
 private slots:

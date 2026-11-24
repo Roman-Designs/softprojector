@@ -101,6 +101,7 @@ SoftProjector::SoftProjector(QWidget *parent)
             this, SLOT(setPictureList(QList<SlideShowItem>&,int,QString)));
     connect(pictureWidget, SIGNAL(sendToSchedule(SlideShow&)),this,SLOT(addToShcedule(SlideShow&)));
     connect(mediaPlayer, SIGNAL(toProjector(VideoInfo&)), this, SLOT(setVideo(VideoInfo&)));
+    connect(mediaPlayer, &MediaWidget::loopChanged, this, &SoftProjector::setVideoLoop);
     connect(editWidget, SIGNAL(updateSongFromDatabase(int,int)), songWidget, SLOT(updateSongFromDatabase(int,int)));
     connect(editWidget, SIGNAL(addedNew(Song,int)), songWidget,SLOT(addNewSong(Song,int)));
     connect(manageDialog, SIGNAL(setMainArrowCursor()), this, SLOT(setArrowCursor()));
@@ -612,6 +613,18 @@ void SoftProjector::stopVideo()
     for (int i = 1; i < 4; ++i)
         if (hasDisplayScreen[i])
             pds[i]->stopVideo();
+}
+
+void SoftProjector::setVideoLoop(bool loop)
+{
+    // Apply the Media tab's Loop checkbox to a video that is already live
+    if (pType != VIDEO)
+        return;
+    currentVideo.loop = loop;
+    pds[0]->setVideoLoop(loop);
+    for (int i = 1; i < 4; ++i)
+        if (hasDisplayScreen[i])
+            pds[i]->setVideoLoop(loop);
 }
 
 void SoftProjector::setVideoPosition(qint64 position)

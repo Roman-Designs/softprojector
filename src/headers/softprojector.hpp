@@ -193,6 +193,7 @@ private slots:
     void pauseVideo();
     void stopVideo();
     void setVideoPosition(qint64 position);
+    void setVideoLoop(bool loop);
     void videoStopped();
 
     void on_listShow_itemSelectionChanged();

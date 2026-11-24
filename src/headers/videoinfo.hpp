@@ -31,6 +31,7 @@ public:
     QUrl filePath;
     QString fileName;
     int aspectRatio;
+    bool loop;
 };
 
 #endif // VIDEOINFO_HPP

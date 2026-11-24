@@ -442,7 +442,7 @@ void ProjectorDisplayScreen::renderVideo(VideoInfo videoDetails)
     setVideoSource(item,videoDetails.filePath);
 
     setVideoVolume(100);
-    item->setProperty("loops",1);
+    item->setProperty("loops", videoDetails.loop ? -1 : 1); // -1 = MediaPlayer.Infinite
     item2->setProperty("fillMode",Qt::KeepAspectRatio);
 
     updateScreen();
@@ -545,4 +545,10 @@ void ProjectorDisplayScreen::setControlsVisible(bool visible)
 {
     QObject *root = dispView->rootObject();
     QMetaObject::invokeMethod(root,"setControlsVisible",Q_ARG(QVariant,visible));
+}
+
+void ProjectorDisplayScreen::setVideoLoop(bool loop)
+{
+    QObject *item = dispView->rootObject()->findChild<QObject*>("player");
+    item->setProperty("loops", loop ? -1 : 1); // -1 = MediaPlayer.Infinite
 }

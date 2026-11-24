@@ -1,6 +1,6 @@
 # SoftProjector
 
-Current tester version: **2.3.0 Beta 2**.
+Current tester version: **2.3.0 Beta 3**.
 
 Qt 6 desktop software for projecting Bible verses, songs, slideshows, announcements, and media.
 

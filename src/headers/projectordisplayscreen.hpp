@@ -63,6 +63,7 @@ public slots:
     void stopVideo();
     void setVideoVolume(int level);
     void setVideoMuted(bool muted);
+    void setVideoLoop(bool loop);
     void setVideoPosition(qint64 position);
 
     void positionControls(DisplayControlsSettings & dSettings);

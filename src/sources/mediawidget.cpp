@@ -70,6 +70,7 @@ MediaWidget::MediaWidget(QWidget *parent) :
     /**********************************************/
 
     ui->pushButtonGoLive->setEnabled(false);
+    connect(ui->checkBoxLoop, &QCheckBox::toggled, this, &MediaWidget::loopChanged);
 
     playIcon = QIcon(":icons/icons/play.png");
     pauseIcon = QIcon(":icons/icons/pause.png");
@@ -332,6 +333,7 @@ void MediaWidget::prepareForProjection()
 //    v.filePath = mediaFilePaths.at(ui->listWidgetMediaFiles->currentRow());
     v.fileName = currentMediaUrl.fileName();
     v.filePath = currentMediaUrl.toString();
+    v.loop = ui->checkBoxLoop->isChecked();
     emit toProjector(v);
 }
 

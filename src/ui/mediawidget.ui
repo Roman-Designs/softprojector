@@ -54,6 +54,16 @@
           </spacer>
          </item>
          <item>
+          <widget class="QCheckBox" name="checkBoxLoop">
+           <property name="toolTip">
+            <string>Repeat the video on the projector until it is stopped</string>
+           </property>
+           <property name="text">
+            <string>Loop</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QPushButton" name="pushButtonGoLive">
            <property name="text">
             <string>Go Live (F5)</string>
